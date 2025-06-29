@@ -27,13 +27,13 @@
     "README.md"
   ],
   "version": "0.0.1",
-  "module": "src/bin.ts",
+  "module": "index.ts",
   "type": "module",
   "private": false,
   "license": "MIT",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "bun --compile src/bin.ts --outfile dist/dumpit",
+    "build": "bun build ./index.ts --compile --minify --sourcemap --bytecode --outfile dist/dumpit",
     "bump": "npm version patch -m \"Release %s\"",
     "publish": "bun run build",
     "format": "prettier --write ."
