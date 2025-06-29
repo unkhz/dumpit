@@ -4,6 +4,7 @@
   "module": "index.ts",
   "type": "module",
   "private": false,
+  "license": "MIT",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "bun --compile index.ts --outfile dist/dumpstream",
