@@ -3,6 +3,18 @@
   "bin": {
     "dumpstream": "dist/dumpstream"
   },
+  "description": "A command-line tool for making HTTP requests and streaming the response body to stdout.",
+  "keywords": ["http", "cli", "request", "stream", "dump", "bun"],
+  "author": "Juhani Pelli <juhani.pelli@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/unkhz/dumpstream.git"
+  },
+  "homepage": "https://github.com/unkhz/dumpstream#readme",
+  "bugs": {
+    "url": "https://github.com/unkhz/dumpstream/issues"
+  },
+  "files": ["dist/dumpstream", "LICENSE", "README.md"],
   "version": "0.0.1",
   "module": "index.ts",
   "type": "module",
