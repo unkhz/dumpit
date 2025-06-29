@@ -22,7 +22,7 @@
   "license": "MIT",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "bun --compile index.ts --outfile dist/dumpstream",
+    "build": "bun build ./index.ts --compile --minify --sourcemap --bytecode --outfile dist/dumpstream",
     "version": "npm version patch -m \"Release %s\"",
     "publish": "bun run build && git add package.json bun.lock && git commit -m \"Release $(node -p \"require('./package.json').version\")\" && npm publish"
   },
