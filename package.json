@@ -1,7 +1,7 @@
 {
-  "name": "dumpstream",
+  "name": "dumpit",
   "bin": {
-    "dumpstream": "dist/dumpstream"
+    "dumpit": "dist/dumpit"
   },
   "description": "A command-line tool for making HTTP requests and streaming the response body to stdout.",
   "keywords": [
@@ -15,14 +15,14 @@
   "author": "Juhani Pelli <juhani.pelli@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/unkhz/dumpstream.git"
+    "url": "git+https://github.com/unkhz/dumpit.git"
   },
-  "homepage": "https://github.com/unkhz/dumpstream#readme",
+  "homepage": "https://github.com/unkhz/dumpit#readme",
   "bugs": {
-    "url": "https://github.com/unkhz/dumpstream/issues"
+    "url": "https://github.com/unkhz/dumpit/issues"
   },
   "files": [
-    "dist/dumpstream",
+    "dist/dumpit",
     "LICENSE",
     "README.md"
   ],
@@ -33,7 +33,7 @@
   "license": "MIT",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "bun build ./index.ts --compile --minify --sourcemap --bytecode --outfile dist/dumpstream",
+    "build": "bun build ./index.ts --compile --minify --sourcemap --bytecode --outfile dist/dumpit",
     "version": "npm version patch -m \"Release %s\"",
     "publish": "bun run build"
   },
