@@ -1,5 +1,5 @@
 {
-    "name": "dumpit",
+  "name": "dumpit",
   "bin": {
     "dumpit": "dist/dumpit"
   },
@@ -36,7 +36,6 @@
     "build": "bun --compile src/bin.ts --outfile dist/dumpit",
     "version": "npm version patch -m \"Release %s\"",
     "publish": "bun run build"
-  }
   },
   "devDependencies": {
     "@types/bun": "latest",
