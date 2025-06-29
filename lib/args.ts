@@ -1,7 +1,6 @@
-
 import { z } from 'zod';
 
-export const ArgsSchema = z.array(z.string()).transform((args, ctx) => {
+const RawArgsSchema = z.array(z.string()).transform((args, ctx) => {
     const positional: string[] = [];
     const named: { [key: string]: string | boolean } = {};
     let skipNext = false;
@@ -27,23 +26,23 @@ export const ArgsSchema = z.array(z.string()).transform((args, ctx) => {
         }
     }
 
-    const PositionalArgs = z.tuple([z.string().url()]);
-    const NamedArgs = z.object({});
-
-    const parsedPositionals = PositionalArgs.safeParse(positional);
-    if (!parsedPositionals.success) {
-        parsedPositionals.error.issues.forEach(issue => ctx.addIssue(issue));
-        return z.NEVER;
-    }
-
-    const parsedNamed = NamedArgs.safeParse(named);
-    if (!parsedNamed.success) {
-        parsedNamed.error.issues.forEach(issue => ctx.addIssue(issue));
-        return z.NEVER;
-    }
-
-    return {
-        positional: parsedPositionals.data,
-        named: parsedNamed.data
-    };
+    return { positional, named };
 });
+
+const ParsedArgsSchema = z.object({
+    url: z.string().url(),
+});
+
+export type ParsedArgs = z.infer<typeof ParsedArgsSchema>;
+
+export function parseArgs(rawArgs: string[]): ParsedArgs {
+    const { positional, named } = RawArgsSchema.parse(rawArgs);
+
+    // Map positional arguments to named properties
+    const combinedArgs = {
+        url: positional[0],
+        ...named,
+    };
+
+    return ParsedArgsSchema.parse(combinedArgs);
+}
