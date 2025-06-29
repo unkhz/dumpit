@@ -1,5 +1,8 @@
 {
   "name": "dumpstream",
+  "bin": {
+    "dumpstream": "dist/dumpstream"
+  },
   "version": "0.0.1",
   "module": "index.ts",
   "type": "module",
@@ -8,7 +11,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "bun --compile index.ts --outfile dist/dumpstream",
-    "publish": "npm version patch --no-git-tag-version && git add package.json bun.lock && git commit -m \"Release $(node -p \"require('./package.json').version\")\" && npm publish"
+    "publish": "npm version patch --no-git-tag-version && bun run build && git add package.json bun.lock && git commit -m \"Release $(node -p \"require('./package.json').version\")\" && npm publish"
   },
   "devDependencies": {
     "@types/bun": "latest",
