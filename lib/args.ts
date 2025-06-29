@@ -3,18 +3,27 @@ import { z } from 'zod';
 
 export const ArgsSchema = z.array(z.string()).transform((args, ctx) => {
     const positional: string[] = [];
-    const named: { [key: string]: any } = {};
+    const named: { [key: string]: string | boolean } = {};
+    let skipNext = false;
 
-    for (let i = 0; i < args.length; i++) {
-        if (args[i].startsWith('--')) {
-            const key = args[i].slice(2);
-            const value = (i + 1 < args.length && !args[i + 1].startsWith('--')) ? args[i + 1] : true;
-            if (value !== true) {
-                i++;
+    for (const [i, arg] of args.entries()) {
+        if (skipNext) {
+            skipNext = false;
+            continue;
+        }
+
+        if (arg.startsWith('--')) {
+            const key = arg.slice(2);
+            const nextArg = args[i + 1];
+
+            if (nextArg !== undefined && !nextArg.startsWith('--')) {
+                named[key] = nextArg;
+                skipNext = true;
+            } else {
+                named[key] = true;
             }
-            named[key] = value;
         } else {
-            positional.push(args[i]);
+            positional.push(arg);
         }
     }
 
