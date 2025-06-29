@@ -1,7 +1,9 @@
-
 import { z } from 'zod';
 
-const RawArgsSchema = z.array(z.string()).transform((args, ctx) => {
+const HttpMethodSchema = z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']);
+
+// This schema will parse the raw string array and transform it into the final structure
+const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
     const positional: string[] = [];
     const named: { [key: string]: string | boolean } = {};
     let skipNext = false;
@@ -27,27 +29,47 @@ const RawArgsSchema = z.array(z.string()).transform((args, ctx) => {
         }
     }
 
-    return { positional, named };
+    // Now, validate the extracted positional and named arguments
+    const parsedMethod = HttpMethodSchema.safeParse(positional[0]);
+    if (!parsedMethod.success) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Invalid HTTP method: ${positional[0] || 'undefined'}`,
+            path: ['method'],
+        });
+        return z.NEVER;
+    }
+
+    const parsedUrl = z.string().url().safeParse(positional[1]);
+    if (!parsedUrl.success) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Invalid URL: ${positional[1] || 'undefined'}`,
+            path: ['url'],
+        });
+        return z.NEVER;
+    }
+
+    const parsedBody = z.string().optional().safeParse(named.body);
+    if (!parsedBody.success) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Invalid body: ${named.body || 'undefined'}`,
+            path: ['body'],
+        });
+        return z.NEVER;
+    }
+
+    // Construct the final object
+    return {
+        method: parsedMethod.data,
+        url: parsedUrl.data,
+        body: parsedBody.data,
+    };
 });
 
-const HttpMethodSchema = z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']);
-
-const ParsedArgsSchema = z.object({
-    method: HttpMethodSchema,
-    url: z.string().url(),
-});
-
-export type ParsedArgs = z.infer<typeof ParsedArgsSchema>;
+export type ParsedArgs = z.infer<typeof FullArgsSchema>;
 
 export function parseArgs(rawArgs: string[]): ParsedArgs {
-    const { positional, named } = RawArgsSchema.parse(rawArgs);
-
-    // Map positional arguments to named properties
-    const combinedArgs = {
-        method: positional[0],
-        url: positional[1],
-        ...named,
-    };
-
-    return ParsedArgsSchema.parse(combinedArgs);
+    return FullArgsSchema.parse(rawArgs);
 }
