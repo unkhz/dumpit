@@ -99,8 +99,24 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
     contentType = "text/plain";
   }
 
-  // Infer method based on body presence
-  const method: z.infer<typeof HttpMethodSchema> = hasJson || hasText ? "POST" : "GET";
+  let method: z.infer<typeof HttpMethodSchema>;
+
+  if ("method" in named) {
+    const rawMethod = String(named.method).toUpperCase();
+    const parsedMethod = HttpMethodSchema.safeParse(rawMethod);
+    if (!parsedMethod.success) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Invalid HTTP method: ${rawMethod}. Must be one of ${HttpMethodSchema.options.join(", ")}.`,
+        path: ["method"],
+      });
+      return z.NEVER;
+    }
+    method = parsedMethod.data;
+  } else {
+    // Infer method based on body presence
+    method = hasJson || hasText ? "POST" : "GET";
+  }
 
   // Construct the final object
   return {
