@@ -109,3 +109,7 @@ For more information, read the Bun API docs in `node_modules/bun-types/docs/**.m
 ## Input Validation
 
 Always convert unknown input to real TS types by using `zod.parse()`.
+
+## Type Safety
+
+After every code change, run `bun run typecheck` to ensure the code is type-safe.
