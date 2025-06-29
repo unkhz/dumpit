@@ -113,3 +113,7 @@ Always convert unknown input to real TS types by using `zod.parse()`.
 ## Type Safety
 
 After every code change, run `bun run typecheck` to ensure the code is type-safe.
+
+## Documentation
+
+Keep `README.md` updated with the latest usage instructions and development scripts.
