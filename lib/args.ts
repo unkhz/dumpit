@@ -1,3 +1,4 @@
+
 import { z } from 'zod';
 
 const RawArgsSchema = z.array(z.string()).transform((args, ctx) => {
@@ -29,7 +30,10 @@ const RawArgsSchema = z.array(z.string()).transform((args, ctx) => {
     return { positional, named };
 });
 
+const HttpMethodSchema = z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']);
+
 const ParsedArgsSchema = z.object({
+    method: HttpMethodSchema,
     url: z.string().url(),
 });
 
@@ -40,7 +44,8 @@ export function parseArgs(rawArgs: string[]): ParsedArgs {
 
     // Map positional arguments to named properties
     const combinedArgs = {
-        url: positional[0],
+        method: positional[0],
+        url: positional[1],
         ...named,
     };
 
