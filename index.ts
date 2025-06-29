@@ -31,7 +31,7 @@ async function main() {
     if (error instanceof z.ZodError) {
       console.error("Invalid arguments:", error.flatten());
       console.error(
-        "Usage: bun run index.ts <method> <url> [--json <string> | --text <string>]",
+        "Usage: dumpit <method> <url> [--json <string> | --text <string>]",
       );
     } else {
       console.error("An unexpected error occurred:", error);

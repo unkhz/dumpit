@@ -2,10 +2,16 @@
 
 A command-line tool for making HTTP requests and dumping the response body to stdout.
 
+## Installation
+
+```bash
+npm install -g dumpit
+```
+
 ## Usage
 
 ```bash
-bun run index.ts <METHOD> <URL> [--json <string> | --text <string>]
+dumpit <METHOD> <URL> [--json <string> | --text <string>]
 ```
 
 - `<METHOD>`: The HTTP method (e.g., `GET`, `POST`, `PUT`, `DELETE`).

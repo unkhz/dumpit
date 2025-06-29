@@ -1,5 +1,5 @@
 {
-  "name": "dumpit",
+    "name": "dumpit",
   "bin": {
     "dumpit": "dist/dumpit"
   },
@@ -27,15 +27,16 @@
     "README.md"
   ],
   "version": "0.0.1",
-  "module": "index.ts",
+  "module": "src/bin.ts",
   "type": "module",
   "private": false,
   "license": "MIT",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "bun build ./index.ts --compile --minify --sourcemap --bytecode --outfile dist/dumpit",
+    "build": "bun --compile src/bin.ts --outfile dist/dumpit",
     "version": "npm version patch -m \"Release %s\"",
     "publish": "bun run build"
+  }
   },
   "devDependencies": {
     "@types/bun": "latest",
