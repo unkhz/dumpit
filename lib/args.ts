@@ -1,3 +1,4 @@
+
 import { z } from 'zod';
 
 const HttpMethodSchema = z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']);
@@ -50,21 +51,63 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
         return z.NEVER;
     }
 
-    const parsedBody = z.string().optional().safeParse(named.body);
-    if (!parsedBody.success) {
+    let body: string | undefined;
+    let contentType: string | undefined;
+
+    const hasJson = 'json' in named;
+    const hasText = 'text' in named;
+
+    if (hasJson && hasText) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `Invalid body: ${named.body || 'undefined'}`,
+            message: 'Cannot specify both --json and --text.',
             path: ['body'],
         });
         return z.NEVER;
+    }
+
+    if (hasJson) {
+        const jsonBody = named.json;
+        if (typeof jsonBody !== 'string') {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: '--json requires a string value.',
+                path: ['json'],
+            });
+            return z.NEVER;
+        }
+        try {
+            JSON.parse(jsonBody);
+            body = jsonBody;
+            contentType = 'application/json';
+        } catch (e) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: '--json value is not valid JSON.',
+                path: ['json'],
+            });
+            return z.NEVER;
+        }
+    } else if (hasText) {
+        const textBody = named.text;
+        if (typeof textBody !== 'string') {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: '--text requires a string value.',
+                path: ['text'],
+            });
+            return z.NEVER;
+        }
+        body = textBody;
+        contentType = 'text/plain';
     }
 
     // Construct the final object
     return {
         method: parsedMethod.data,
         url: parsedUrl.data,
-        body: parsedBody.data,
+        body,
+        contentType,
     };
 });
 

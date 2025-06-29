@@ -9,6 +9,7 @@ async function main() {
         console.log('Method:', args.method);
         console.log('URL:', args.url);
         console.log('Body:', args.body);
+        console.log('Content-Type:', args.contentType);
         console.log('All args:', args);
 
         const requestOptions: RequestOptions = {
@@ -19,6 +20,10 @@ async function main() {
             requestOptions.body = args.body;
         }
 
+        if (args.contentType) {
+            requestOptions.headers = { 'Content-Type': args.contentType };
+        }
+
         const responseStream = await request(args.url, requestOptions);
         console.log('Dumping response body to stdout...');
         await dumpStreamToStdout(responseStream);
@@ -26,7 +31,7 @@ async function main() {
     } catch (error) {
         if (error instanceof z.ZodError) {
             console.error('Invalid arguments:', error.flatten());
-            console.error('Usage: bun run index.ts <method> <url> [--body <string>]');
+            console.error('Usage: bun run index.ts <method> <url> [--json <string> | --text <string>]');
         } else {
             console.error('An unexpected error occurred:', error);
         }
