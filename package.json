@@ -35,7 +35,8 @@
     "typecheck": "tsc --noEmit",
     "build": "bun --compile src/bin.ts --outfile dist/dumpit",
     "version": "npm version patch -m \"Release %s\"",
-    "publish": "bun run build"
+    "publish": "bun run build",
+    "format": "prettier --write ."
   },
   "devDependencies": {
     "@types/bun": "latest",
