@@ -1,7 +1,7 @@
-
 import { z } from 'zod';
 import { parseArgs } from './lib/args';
 import { request, type RequestOptions } from './lib/request';
+import { dumpStreamToStdout } from './lib/dump';
 
 async function main() {
     try {
@@ -20,9 +20,8 @@ async function main() {
         }
 
         const responseStream = await request(args.url, requestOptions);
-        console.log('Received response body as ReadableStream.');
-        // For now, we'll just log that we received the stream.
-        // In a real application, you would pipe this stream to stdout or process it.
+        console.log('Dumping response body to stdout...');
+        await dumpStreamToStdout(responseStream);
 
     } catch (error) {
         if (error instanceof z.ZodError) {
