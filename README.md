@@ -11,7 +11,7 @@ npm install -g dumpit
 ## Usage
 
 ```bash
-dumpit <METHOD> <URL> [--json <string> | --text <string>]
+dumpit <URL> [--json <string> | --text <string>]
 ```
 
 - `<METHOD>`: The HTTP method (e.g., `GET`, `POST`, `PUT`, `DELETE`).

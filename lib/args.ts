@@ -37,22 +37,12 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
     }
   }
 
-  // Now, validate the extracted positional and named arguments
-  const parsedMethod = HttpMethodSchema.safeParse(positional[0]);
-  if (!parsedMethod.success) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: `Invalid HTTP method: ${positional[0] || "undefined"}`,
-      path: ["method"],
-    });
-    return z.NEVER;
-  }
-
-  const parsedUrl = z.string().url().safeParse(positional[1]);
+  // URL is now the first positional argument
+  const parsedUrl = z.string().url().safeParse(positional[0]);
   if (!parsedUrl.success) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `Invalid URL: ${positional[1] || "undefined"}`,
+      message: `Invalid URL: ${positional[0] || "undefined"}`,
       path: ["url"],
     });
     return z.NEVER;
@@ -109,9 +99,12 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
     contentType = "text/plain";
   }
 
+  // Infer method based on body presence
+  const method: z.infer<typeof HttpMethodSchema> = hasJson || hasText ? "POST" : "GET";
+
   // Construct the final object
   return {
-    method: parsedMethod.data,
+    method,
     url: parsedUrl.data,
     body,
     contentType,

@@ -30,9 +30,7 @@ async function main() {
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error("Invalid arguments:", error.flatten());
-      console.error(
-        "Usage: dumpit <method> <url> [--json <string> | --text <string>]",
-      );
+      console.error("Usage: dumpit <url> [--json <string> | --text <string>]");
     } else {
       console.error("An unexpected error occurred:", error);
     }
