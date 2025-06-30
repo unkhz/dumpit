@@ -1,25 +1,26 @@
 {
-  "name": "dumpit",
+  "name": "rekku",
+  "version": "0.0.9",
   "bin": {
-    "dumpit": "bin/dumpit"
+    "rekku": "bin/rekku"
   },
   "description": "A command-line tool for making HTTP requests and streaming the response body to stdout.",
   "keywords": [
     "http",
     "cli",
     "request",
+    "fetch",
     "stream",
-    "dump",
     "bun"
   ],
   "author": "Juhani Pelli <juhani.pelli@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/unkhz/dumpit.git"
+    "url": "git+https://github.com/unkhz/rekku.git"
   },
-  "homepage": "https://github.com/unkhz/dumpit#readme",
+  "homepage": "https://github.com/unkhz/rekku#readme",
   "bugs": {
-    "url": "https://github.com/unkhz/dumpit/issues"
+    "url": "https://github.com/unkhz/rekku/issues"
   },
   "files": [
     "dist",
@@ -27,7 +28,6 @@
     "LICENSE",
     "README.md"
   ],
-  "version": "0.0.9",
   "module": "index.ts",
   "type": "module",
   "private": false,

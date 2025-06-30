@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "dumpit",
+      "name": "rekku",
       "dependencies": {
         "zod": "^3.25.67",
       },

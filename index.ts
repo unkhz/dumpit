@@ -1,5 +1,3 @@
-
-
 import { z } from "zod";
 import { parseArgs } from "./lib/args";
 import { request, type RequestOptions } from "./lib/request";
@@ -26,7 +24,7 @@ async function main() {
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error("Invalid arguments:", error.flatten());
-      console.error("Usage: dumpit <url> [--json <string> | --text <string>]");
+      console.error("Usage: rekku <url> [--json <string> | --text <string>]");
     } else {
       console.error("An unexpected error occurred:", error);
     }

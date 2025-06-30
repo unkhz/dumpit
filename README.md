@@ -1,11 +1,11 @@
-# dumpit
+# rekku
 
-A command-line tool for making HTTP requests and dumping the response body to stdout.
+A command-line tool for making all sorts of HTTP requests and dumping the response body to stdout.
 
 ## Usage
 
 ```bash
-bunx dumpit <URL> [--method <METHOD>] [--json <string> | --text <string>]
+bunx rekku <URL> [--method <METHOD>] [--json <string> | --text <string>]
 ```
 
 - `<URL>`: The URL to make the request to.
