@@ -1,9 +1,25 @@
 #!/bin/sh
 # Launcher script to detect the runtime (bun or node)
 
-# Get the directory where this script is located to find the main application
-DIR=$(dirname "$0")
-APP_PATH="$DIR/../dist/index.js"
+# Resolve the symlink to find the actual script directory.
+# This is the critical step to fix the path issue.
+SCRIPT_SYMLINK_DIR=$(dirname "$0")
+LINK_TARGET=$(readlink "$0")
+
+# Handle cases where readlink might give an absolute path
+case "$LINK_TARGET" in
+  /*)
+    REAL_SCRIPT_PATH="$LINK_TARGET"
+    ;;
+  *)
+    # Resolve the relative path from the symlink's directory
+    REAL_SCRIPT_PATH="$SCRIPT_SYMLINK_DIR/$LINK_TARGET"
+    ;;
+esac
+
+# The real directory of our script is one level up from the package root
+REAL_DIR=$(dirname "$REAL_SCRIPT_PATH")
+APP_PATH="$REAL_DIR/../dist/index.js"
 
 case "$npm_config_user_agent" in
   bun/*)
