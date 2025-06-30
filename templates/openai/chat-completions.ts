@@ -31,6 +31,8 @@ export const schema = z.object({
 
 export type ChatCompletionData = z.infer<typeof schema>;
 
+export const path = "chat/completions";
+
 export function render(data: Partial<ChatCompletionData>): ChatCompletionData {
   return schema.parse(data);
 }

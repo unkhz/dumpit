@@ -1,9 +1,14 @@
 import { resolve } from "path";
 
+export interface TemplateResult {
+  body: string;
+  path?: string;
+}
+
 export async function renderTemplate(
   templatePath: string,
   data: any,
-): Promise<string> {
+): Promise<TemplateResult> {
   try {
     const resolvedPath = resolve(process.cwd(), templatePath);
 
@@ -16,14 +21,19 @@ export async function renderTemplate(
         );
       }
       const result = templateModule.render(data);
-      return JSON.stringify(result, null, 2);
+      return {
+        body: JSON.stringify(result, null, 2),
+        path: templateModule.path,
+      };
     }
 
     // Fallback to Nunjucks for .njk files (for backward compatibility)
     const nunjucks = await import("nunjucks");
     const env = nunjucks.configure({ autoescape: false });
     const templateContent = await Bun.file(resolvedPath).text();
-    return env.renderString(templateContent, data);
+    return {
+      body: env.renderString(templateContent, data),
+    };
   } catch (error) {
     throw new Error(`Failed to render template ${templatePath}: ${error}`);
   }

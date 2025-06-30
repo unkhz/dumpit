@@ -12,13 +12,23 @@ async function main() {
       method: args.method,
     };
 
+    let finalUrl = args.url;
+
     if (args.template) {
-      const renderedBody = await renderTemplate(
+      const templateResult = await renderTemplate(
         args.template,
         args.templateData,
       );
-      requestOptions.body = renderedBody;
+      requestOptions.body = templateResult.body;
       requestOptions.headers = { "Content-Type": "application/json" };
+
+      // Append template path to URL if provided
+      if (templateResult.path) {
+        // Clean up slashes: remove trailing slashes from base, leading slashes from path
+        const baseUrl = args.url.replace(/\/+$/, "");
+        const path = templateResult.path.replace(/^\/+/, "");
+        finalUrl = `${baseUrl}/${path}`;
+      }
     } else if (args.body) {
       requestOptions.body = args.body;
     }
@@ -27,7 +37,7 @@ async function main() {
       requestOptions.headers = { "Content-Type": args.contentType };
     }
 
-    const responseStream = await request(args.url, requestOptions);
+    const responseStream = await request(finalUrl, requestOptions);
     await dumpStreamToStdout(responseStream);
   } catch (error) {
     if (error instanceof z.ZodError) {
