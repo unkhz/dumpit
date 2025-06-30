@@ -26,7 +26,31 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
       const key = arg.slice(2);
       const nextArg = args[i + 1];
 
-      if (nextArg !== undefined && !nextArg.startsWith("--")) {
+      if (nextArg !== undefined && !nextArg.startsWith("-")) {
+        named[key] = nextArg;
+        skipNext = true;
+      } else {
+        named[key] = true;
+      }
+    } else if (arg.startsWith("-") && arg.length > 1) {
+      // Handle short flags
+      const shortFlag = arg.slice(1);
+      let key: string;
+
+      // Map short flags to long flags
+      switch (shortFlag) {
+        case "t":
+          key = "template";
+          break;
+        case "d":
+          key = "template-data";
+          break;
+        default:
+          key = shortFlag; // Keep unknown short flags as-is
+      }
+
+      const nextArg = args[i + 1];
+      if (nextArg !== undefined && !nextArg.startsWith("-")) {
         named[key] = nextArg;
         skipNext = true;
       } else {

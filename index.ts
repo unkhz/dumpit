@@ -43,7 +43,7 @@ async function main() {
     if (error instanceof z.ZodError) {
       console.error("Invalid arguments:", error.flatten());
       console.error(
-        "Usage: rekku <url> [--json <string> | --text <string> | --template <path> [--template-data <json>]]",
+        "Usage: rekku <url> [--json <string> | --text <string> | --template/-t <path> [--template-data/-d <json>]]",
       );
     } else {
       console.error("An unexpected error occurred:", error);
