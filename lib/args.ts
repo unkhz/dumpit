@@ -53,11 +53,12 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
 
   const hasJson = "json" in named;
   const hasText = "text" in named;
+  const hasTemplate = "template" in named;
 
-  if (hasJson && hasText) {
+  if ([hasJson, hasText, hasTemplate].filter(Boolean).length > 1) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Cannot specify both --json and --text.",
+      message: "Cannot specify more than one of --json, --text, or --template.",
       path: ["body"],
     });
     return z.NEVER;
@@ -97,8 +98,17 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
     }
     body = textBody;
     contentType = "text/plain";
+  } else if (hasTemplate) {
+    const templatePath = named.template;
+    if (typeof templatePath !== "string") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "--template requires a string value.",
+        path: ["template"],
+      });
+      return z.NEVER;
+    }
   }
-
   let method: z.infer<typeof HttpMethodSchema>;
 
   if ("method" in named) {
@@ -115,7 +125,36 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
     method = parsedMethod.data;
   } else {
     // Infer method based on body presence
-    method = hasJson || hasText ? "POST" : "GET";
+    method = hasJson || hasText || hasTemplate ? "POST" : "GET";
+  }
+
+  // Handle template rendering
+  let template: string | undefined;
+  let templateData: any = {};
+
+  if (hasTemplate) {
+    template = named.template as string;
+    if ("template-data" in named) {
+      const templateDataStr = named["template-data"];
+      if (typeof templateDataStr !== "string") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "--template-data requires a string value.",
+          path: ["template-data"],
+        });
+        return z.NEVER;
+      }
+      try {
+        templateData = JSON.parse(templateDataStr);
+      } catch (e) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "--template-data value is not valid JSON.",
+          path: ["template-data"],
+        });
+        return z.NEVER;
+      }
+    }
   }
 
   // Construct the final object
@@ -124,6 +163,8 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
     url: parsedUrl.data,
     body,
     contentType,
+    template,
+    templateData,
   };
 });
 

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { parseArgs } from "./lib/args";
 import { request, type RequestOptions } from "./lib/request";
 import { dumpStreamToStdout } from "./lib/dump";
+import { renderTemplate } from "./lib/template";
 
 async function main() {
   try {
@@ -11,7 +12,14 @@ async function main() {
       method: args.method,
     };
 
-    if (args.body) {
+    if (args.template) {
+      const renderedBody = await renderTemplate(
+        args.template,
+        args.templateData,
+      );
+      requestOptions.body = renderedBody;
+      requestOptions.headers = { "Content-Type": "application/json" };
+    } else if (args.body) {
       requestOptions.body = args.body;
     }
 
@@ -24,7 +32,9 @@ async function main() {
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error("Invalid arguments:", error.flatten());
-      console.error("Usage: rekku <url> [--json <string> | --text <string>]");
+      console.error(
+        "Usage: rekku <url> [--json <string> | --text <string> | --template <path> [--template-data <json>]]",
+      );
     } else {
       console.error("An unexpected error occurred:", error);
     }
