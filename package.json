@@ -1,7 +1,7 @@
 {
   "name": "dumpit",
   "bin": {
-    "dumpit": "dist/index.js"
+    "dumpit": "bin/dumpit"
   },
   "description": "A command-line tool for making HTTP requests and streaming the response body to stdout.",
   "keywords": [

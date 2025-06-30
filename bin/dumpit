@@ -1,0 +1,17 @@
+#!/bin/sh
+# Launcher script to detect the runtime (bun or node)
+
+# Get the directory where this script is located to find the main application
+DIR=$(dirname "$0")
+APP_PATH="$DIR/../dist/index.js"
+
+case "$npm_config_user_agent" in
+  bun/*)
+    # Executed with bunx
+    bun "$APP_PATH" "$@"
+    ;;
+  *)
+    # Executed with npx or other
+    node "$APP_PATH" "$@"
+    ;;
+esac
