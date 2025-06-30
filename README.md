@@ -2,16 +2,10 @@
 
 A command-line tool for making HTTP requests and dumping the response body to stdout.
 
-## Installation
-
-```bash
-npm install -g dumpit
-```
-
 ## Usage
 
 ```bash
-dumpit <URL> [--method <METHOD>] [--json <string> | --text <string>]
+bunx dumpit <URL> [--method <METHOD>] [--json <string> | --text <string>]
 ```
 
 - `<URL>`: The URL to make the request to.

@@ -22,7 +22,7 @@
     "url": "https://github.com/unkhz/dumpit/issues"
   },
   "files": [
-    "dist/dumpit",
+    "dist",
     "LICENSE",
     "README.md"
   ],

@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { z } from "zod";
 import { parseArgs } from "./lib/args";
 import { request, type RequestOptions } from "./lib/request";
@@ -6,11 +8,6 @@ import { dumpStreamToStdout } from "./lib/dump";
 async function main() {
   try {
     const args = parseArgs(process.argv.slice(2));
-    console.log("Method:", args.method);
-    console.log("URL:", args.url);
-    console.log("Body:", args.body);
-    console.log("Content-Type:", args.contentType);
-    console.log("All args:", args);
 
     const requestOptions: RequestOptions = {
       method: args.method,
@@ -25,7 +22,6 @@ async function main() {
     }
 
     const responseStream = await request(args.url, requestOptions);
-    console.log("Dumping response body to stdout...");
     await dumpStreamToStdout(responseStream);
   } catch (error) {
     if (error instanceof z.ZodError) {
