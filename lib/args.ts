@@ -68,145 +68,191 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
     return { _showUsage: true } as any;
   }
 
-  if (command !== "dump") {
+  if (!["dump", "api"].includes(command)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `Unknown command: ${command}. Available commands: dump`,
+      message: `Unknown command: ${command}. Available commands: dump, api`,
       path: ["command"],
     });
     return z.NEVER;
   }
 
-  // URL is now the second positional argument
-  const parsedUrl = z.string().url().safeParse(positional[1]);
-  if (!parsedUrl.success) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: `Invalid URL: ${positional[1] || "undefined"}`,
-      path: ["url"],
-    });
-    return z.NEVER;
-  }
-
-  let body: string | undefined;
-  let contentType: string | undefined;
-
-  const hasJson = "json" in named;
-  const hasText = "text" in named;
-  const hasTemplate = "template" in named;
-
-  if ([hasJson, hasText, hasTemplate].filter(Boolean).length > 1) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Cannot specify more than one of --json, --text, or --template.",
-      path: ["body"],
-    });
-    return z.NEVER;
-  }
-
-  if (hasJson) {
-    const jsonBody = named.json;
-    if (typeof jsonBody !== "string") {
+  // Handle different command structures
+  if (command === "dump") {
+    // URL is the second positional argument for dump
+    const parsedUrl = z.string().url().safeParse(positional[1]);
+    if (!parsedUrl.success) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "--json requires a string value.",
-        path: ["json"],
+        message: `Invalid URL: ${positional[1] || "undefined"}`,
+        path: ["url"],
       });
       return z.NEVER;
     }
-    try {
-      JSON.parse(jsonBody);
-      body = jsonBody;
-      contentType = "application/json";
-    } catch (e) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "--json value is not valid JSON.",
-        path: ["json"],
-      });
-      return z.NEVER;
-    }
-  } else if (hasText) {
-    const textBody = named.text;
-    if (typeof textBody !== "string") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "--text requires a string value.",
-        path: ["text"],
-      });
-      return z.NEVER;
-    }
-    body = textBody;
-    contentType = "text/plain";
-  } else if (hasTemplate) {
-    const templatePath = named.template;
-    if (typeof templatePath !== "string") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "--template requires a string value.",
-        path: ["template"],
-      });
-      return z.NEVER;
-    }
-  }
-  let method: z.infer<typeof HttpMethodSchema>;
 
-  if ("method" in named) {
-    const rawMethod = String(named.method).toUpperCase();
-    const parsedMethod = HttpMethodSchema.safeParse(rawMethod);
-    if (!parsedMethod.success) {
+    let body: string | undefined;
+    let contentType: string | undefined;
+
+    const hasJson = "json" in named;
+    const hasText = "text" in named;
+    const hasTemplate = "template" in named;
+
+    if ([hasJson, hasText, hasTemplate].filter(Boolean).length > 1) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `Invalid HTTP method: ${rawMethod}. Must be one of ${HttpMethodSchema.options.join(", ")}.`,
-        path: ["method"],
+        message:
+          "Cannot specify more than one of --json, --text, or --template.",
+        path: ["body"],
       });
       return z.NEVER;
     }
-    method = parsedMethod.data;
-  } else {
-    // Infer method based on body presence
-    method = hasJson || hasText || hasTemplate ? "POST" : "GET";
-  }
 
-  // Handle template rendering
-  let template: string | undefined;
-  let templateData: any = {};
-
-  if (hasTemplate) {
-    template = named.template as string;
-    if ("template-data" in named) {
-      const templateDataStr = named["template-data"];
-      if (typeof templateDataStr !== "string") {
+    if (hasJson) {
+      const jsonBody = named.json;
+      if (typeof jsonBody !== "string") {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "--template-data requires a string value.",
-          path: ["template-data"],
+          message: "--json requires a string value.",
+          path: ["json"],
         });
         return z.NEVER;
       }
       try {
-        templateData = JSON.parse(templateDataStr);
+        JSON.parse(jsonBody);
+        body = jsonBody;
+        contentType = "application/json";
       } catch (e) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "--template-data value is not valid JSON.",
-          path: ["template-data"],
+          message: "--json value is not valid JSON.",
+          path: ["json"],
+        });
+        return z.NEVER;
+      }
+    } else if (hasText) {
+      const textBody = named.text;
+      if (typeof textBody !== "string") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "--text requires a string value.",
+          path: ["text"],
+        });
+        return z.NEVER;
+      }
+      body = textBody;
+      contentType = "text/plain";
+    } else if (hasTemplate) {
+      const templatePath = named.template;
+      if (typeof templatePath !== "string") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "--template requires a string value.",
+          path: ["template"],
         });
         return z.NEVER;
       }
     }
+
+    let method: z.infer<typeof HttpMethodSchema>;
+
+    if ("method" in named) {
+      const rawMethod = String(named.method).toUpperCase();
+      const parsedMethod = HttpMethodSchema.safeParse(rawMethod);
+      if (!parsedMethod.success) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Invalid HTTP method: ${rawMethod}. Must be one of ${HttpMethodSchema.options.join(", ")}.`,
+          path: ["method"],
+        });
+        return z.NEVER;
+      }
+      method = parsedMethod.data;
+    } else {
+      // Infer method based on body presence
+      method = hasJson || hasText || hasTemplate ? "POST" : "GET";
+    }
+
+    // Handle template rendering for dump command
+    let template: string | undefined;
+    let templateData: any = {};
+
+    if (hasTemplate) {
+      template = named.template as string;
+      if ("template-data" in named) {
+        const templateDataStr = named["template-data"];
+        if (typeof templateDataStr !== "string") {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "--template-data requires a string value.",
+            path: ["template-data"],
+          });
+          return z.NEVER;
+        }
+        try {
+          templateData = JSON.parse(templateDataStr);
+        } catch (e) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "--template-data value is not valid JSON.",
+            path: ["template-data"],
+          });
+          return z.NEVER;
+        }
+      }
+    }
+
+    // Construct the final object for dump command
+    return {
+      command,
+      method,
+      url: parsedUrl.data,
+      body,
+      contentType,
+      template,
+      templateData,
+    };
+  } else if (command === "api") {
+    // Handle api command structure: api <subcommand> <name>
+    const subcommand = positional[1];
+    const name = positional[2];
+
+    if (!subcommand) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "API subcommand is required. Available subcommands: create",
+        path: ["subcommand"],
+      });
+      return z.NEVER;
+    }
+
+    if (subcommand !== "create") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Unknown API subcommand: ${subcommand}. Available subcommands: create`,
+        path: ["subcommand"],
+      });
+      return z.NEVER;
+    }
+
+    if (!name) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "API name is required for create command",
+        path: ["name"],
+      });
+      return z.NEVER;
+    }
+
+    // Construct the final object for api command
+    return {
+      command,
+      subcommand,
+      name,
+    };
   }
 
-  // Construct the final object
-  return {
-    command,
-    method,
-    url: parsedUrl.data,
-    body,
-    contentType,
-    template,
-    templateData,
-  };
+  // This should never be reached
+  throw new Error("Unexpected command flow");
 });
 
 export type ParsedArgs = z.infer<typeof FullArgsSchema>;

@@ -37,3 +37,6 @@ dist/
 
 # bun
 *.bun-build
+
+# rekku
+.rekku/

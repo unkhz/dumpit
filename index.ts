@@ -8,7 +8,10 @@ function showUsage() {
   console.log("Usage: rekku <command> [options...]");
   console.log("");
   console.log("Commands:");
-  console.log("  dump <url>    Make HTTP request and dump response to stdout");
+  console.log(
+    "  dump <url>         Make HTTP request and dump response to stdout",
+  );
+  console.log("  api create <name>  Create API folder structure");
   console.log("");
   console.log("Options for dump command:");
   console.log(
@@ -37,6 +40,9 @@ async function main() {
       case "dump":
         await handleDumpCommand(args);
         break;
+      case "api":
+        await handleApiCommand(args);
+        break;
       default:
         throw new Error(`Unknown command: ${args.command}`);
     }
@@ -53,7 +59,7 @@ async function main() {
   }
 }
 
-async function handleDumpCommand(args: ReturnType<typeof parseArgs>) {
+async function handleDumpCommand(args: any) {
   const requestOptions: RequestOptions = {
     method: args.method,
   };
@@ -85,6 +91,29 @@ async function handleDumpCommand(args: ReturnType<typeof parseArgs>) {
 
   const responseStream = await request(finalUrl, requestOptions);
   await dumpStreamToStdout(responseStream);
+}
+
+async function handleApiCommand(args: any) {
+  switch (args.subcommand) {
+    case "create":
+      await createApiFolder(args.name);
+      break;
+    default:
+      throw new Error(`Unknown API subcommand: ${args.subcommand}`);
+  }
+}
+
+async function createApiFolder(name: string) {
+  const apiPath = `.rekku/apis/${name}`;
+
+  try {
+    // Create the directory recursively
+    await Bun.write(Bun.file(`${apiPath}/.gitkeep`), "");
+    console.log(`Created API folder: ${apiPath}`);
+  } catch (error) {
+    console.error(`Failed to create API folder: ${error}`);
+    process.exit(1);
+  }
 }
 
 main();
