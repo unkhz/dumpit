@@ -1,13 +1,15 @@
 import { resolve } from "path";
 
 export interface TemplateResult {
-  body: string;
-  path?: string;
+  input: any;
+  query: any;
+  method: string;
+  path: string;
 }
 
 export async function renderTemplate(
   templatePath: string,
-  data: any,
+  data: any
 ): Promise<TemplateResult> {
   try {
     const resolvedPath = resolve(process.cwd(), templatePath);
@@ -15,14 +17,29 @@ export async function renderTemplate(
     // Check if it's a TypeScript template
     if (templatePath.endsWith(".ts")) {
       const templateModule = await import(resolvedPath);
+
+      // Validate required exports
       if (typeof templateModule.render !== "function") {
         throw new Error(
-          `Template ${templatePath} must export a 'render' function`,
+          `Template ${templatePath} must export a 'render' function`
         );
       }
-      const result = templateModule.render(data);
+      if (!templateModule.method) {
+        throw new Error(
+          `Template ${templatePath} must export a 'method' string`
+        );
+      }
+      if (!templateModule.path) {
+        throw new Error(`Template ${templatePath} must export a 'path' string`);
+      }
+
+      // Render the template with provided data
+      const rendered = templateModule.render(data);
+
       return {
-        body: JSON.stringify(result, null, 2),
+        input: rendered.input,
+        query: rendered.query,
+        method: templateModule.method,
         path: templateModule.path,
       };
     }
@@ -31,10 +48,24 @@ export async function renderTemplate(
     const nunjucks = await import("nunjucks");
     const env = nunjucks.configure({ autoescape: false });
     const templateContent = await Bun.file(resolvedPath).text();
+    const body = env.renderString(templateContent, data);
+
+    // For legacy templates, return as input with default values
     return {
-      body: env.renderString(templateContent, data),
+      input: JSON.parse(body),
+      query: {},
+      method: "GET",
+      path: "/",
     };
   } catch (error) {
-    throw new Error(`Failed to render template ${templatePath}: ${error}`);
+    console.error(
+      `Error rendering template ${templatePath}:`,
+      error,
+      templatePath,
+      data
+    );
+    throw new Error(`Failed to render template ${templatePath}`, {
+      cause: error,
+    });
   }
 }

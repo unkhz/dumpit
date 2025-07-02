@@ -72,15 +72,40 @@ async function handleDumpCommand(args: any) {
       args.template,
       args.templateData,
     );
-    requestOptions.body = templateResult.body;
-    requestOptions.headers = { "Content-Type": "application/json" };
 
-    // Append template path to URL if provided
+    // Use template's method and path
+    requestOptions.method = templateResult.method as
+      | "GET"
+      | "POST"
+      | "PUT"
+      | "DELETE"
+      | "PATCH"
+      | "HEAD"
+      | "OPTIONS";
+
+    // Set request body from template input
+    if (templateResult.input && Object.keys(templateResult.input).length > 0) {
+      requestOptions.body = JSON.stringify(templateResult.input);
+      requestOptions.headers = { "Content-Type": "application/json" };
+    }
+
+    // Append template path to URL
     if (templateResult.path) {
       // Clean up slashes: remove trailing slashes from base, leading slashes from path
       const baseUrl = args.url.replace(/\/+$/, "");
       const path = templateResult.path.replace(/^\/+/, "");
       finalUrl = `${baseUrl}/${path}`;
+    }
+
+    // Add query parameters from template
+    if (templateResult.query && Object.keys(templateResult.query).length > 0) {
+      const url = new URL(finalUrl);
+      Object.entries(templateResult.query).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          url.searchParams.set(key, String(value));
+        }
+      });
+      finalUrl = url.toString();
     }
   } else if (args.body) {
     requestOptions.body = args.body;

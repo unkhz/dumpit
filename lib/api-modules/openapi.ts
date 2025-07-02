@@ -313,8 +313,17 @@ export function render(data: Partial<z.infer<typeof inputSchema> & z.infer<typeo
   input: z.infer<typeof inputSchema>;
   query: z.infer<typeof querySchema>;
 } {
+  // Handle the case where inputSchema is z.never() (no request body)
+  let input: z.infer<typeof inputSchema>;
+  try {
+    input = inputSchema.parse(data);
+  } catch {
+    // If inputSchema is z.never(), return undefined as the input
+    input = undefined as z.infer<typeof inputSchema>;
+  }
+
   return {
-    input: inputSchema.parse(data),
+    input,
     query: querySchema.parse(data),
   };
 }

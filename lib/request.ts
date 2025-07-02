@@ -23,15 +23,21 @@ export type RequestOptions = z.infer<typeof RequestOptionsSchema>;
 
 export async function request(
   url: string,
-  options?: RequestOptions,
+  options?: RequestOptions
 ): Promise<ReadableStream<Uint8Array>> {
   const validatedOptions = RequestOptionsSchema.parse(options);
 
   const response = await fetch(url, validatedOptions);
 
   if (!response.ok) {
+    console.error(
+      `Error making request to ${url}:`,
+      validatedOptions,
+      response.status,
+      response.statusText
+    );
     throw new Error(
-      `HTTP error! Status: ${response.status} ${response.statusText}`,
+      `HTTP error! Status: ${response.status} ${response.statusText}`
     );
   }
 
