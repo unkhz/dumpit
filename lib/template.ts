@@ -15,7 +15,7 @@ export async function renderTemplate(
     const resolvedPath = resolve(process.cwd(), templatePath);
 
     // Only support TypeScript templates
-    if (!templatePath.endsWith(".ts")) {
+    if (!resolvedPath.endsWith(".ts")) {
       throw new Error(
         `Template ${templatePath} must be a TypeScript file (.ts)`,
       );

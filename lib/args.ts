@@ -45,6 +45,9 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
         case "d":
           key = "template-data";
           break;
+        case "a":
+          key = "api";
+          break;
         default:
           key = shortFlag; // Keep unknown short flags as-is
       }
@@ -96,12 +99,22 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
     const hasJson = "json" in named;
     const hasText = "text" in named;
     const hasTemplate = "template" in named;
+    const hasApi = "api" in named;
 
-    if ([hasJson, hasText, hasTemplate].filter(Boolean).length > 1) {
+    // API can be used with template, but not with json/text
+    const conflictingOptions = [hasJson, hasText];
+    if (hasTemplate && !hasApi) {
+      conflictingOptions.push(hasTemplate);
+    }
+    if (hasApi && !hasTemplate) {
+      conflictingOptions.push(hasApi);
+    }
+
+    if (conflictingOptions.filter(Boolean).length > 1) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message:
-          "Cannot specify more than one of --json, --text, or --template.",
+          "Cannot specify more than one of --json, --text, or --template (unless using --api with --template).",
         path: ["body"],
       });
       return z.NEVER;
@@ -169,14 +182,62 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
       method = parsedMethod.data;
     } else {
       // Infer method based on body presence
-      method = hasJson || hasText || hasTemplate ? "POST" : "GET";
+      method = hasJson || hasText || hasTemplate || hasApi ? "POST" : "GET";
     }
 
     // Handle template rendering for dump command
     let template: string | undefined;
     let templateData: any = {};
 
-    if (hasTemplate) {
+    if (hasTemplate && hasApi) {
+      // Handle API template shortcut
+
+      const apiName = named.api as string;
+      if (typeof apiName !== "string") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "--api requires a string value.",
+          path: ["api"],
+        });
+        return z.NEVER;
+      }
+
+      const templatePath = named.template as string;
+      if (typeof templatePath !== "string") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "--template requires a string value when using --api.",
+          path: ["template"],
+        });
+        return z.NEVER;
+      }
+
+      // Construct the full template path
+      template = `.rekku/apis/${apiName}/templates/${templatePath}.ts`;
+
+      // Handle template data
+      if ("template-data" in named) {
+        const templateDataStr = named["template-data"];
+        if (typeof templateDataStr !== "string") {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "--template-data requires a string value.",
+            path: ["template-data"],
+          });
+          return z.NEVER;
+        }
+        try {
+          templateData = JSON.parse(templateDataStr);
+        } catch (e) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "--template-data value is not valid JSON.",
+            path: ["template-data"],
+          });
+          return z.NEVER;
+        }
+      }
+    } else if (hasTemplate) {
       template = named.template as string;
       if ("template-data" in named) {
         const templateDataStr = named["template-data"];

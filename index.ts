@@ -20,8 +20,9 @@ function showUsage() {
   );
   console.log("  --json <JSON_STRING>             Send JSON body");
   console.log("  --text <TEXT_STRING>             Send text body");
+  console.log("  --template/-t <TEMPLATE_PATH>    Use template file");
   console.log(
-    "  --template/-t <TEMPLATE_NAME>    Use template from templates/",
+    "  --api/-a <API_NAME>              Use API template (requires --template/-t)",
   );
   console.log("  --template-data/-d <JSON_DATA>   Data for template rendering");
 }
