@@ -9,15 +9,17 @@ function showUsage() {
   console.log("Usage: rekku <command> [options...]");
   console.log("");
   console.log("Commands:");
-  console.log(
-    "  dump <url>              Make HTTP request and dump response to stdout",
-  );
+  console.log("  get <url>               Make GET request");
+  console.log("  post <url>              Make POST request");
+  console.log("  put <url>               Make PUT request");
+  console.log("  delete <url>            Make DELETE request");
+  console.log("  patch <url>             Make PATCH request");
+  console.log("  head <url>              Make HEAD request");
+  console.log("  options <url>           Make OPTIONS request");
+  console.log("  dump <url>              Make HTTP request (legacy)");
   console.log("  api create <name> <url> Create API from OpenAPI schema");
   console.log("");
-  console.log("Options for dump command:");
-  console.log(
-    "  --method <METHOD>                HTTP method (GET, POST, etc.)",
-  );
+  console.log("Options for HTTP commands:");
   console.log("  --json <JSON_STRING>             Send JSON body");
   console.log("  --text <TEXT_STRING>             Send text body");
   console.log("  --template/-t <TEMPLATE_PATH>    Use template file");
@@ -25,6 +27,15 @@ function showUsage() {
     "  --api/-a <API_NAME>              Use API template (requires --template/-t)",
   );
   console.log("  --template-data/-d <JSON_DATA>   Data for template rendering");
+  console.log("");
+  console.log("Examples:");
+  console.log("  rekku get https://api.example.com/users");
+  console.log(
+    '  rekku post https://api.example.com/users --json \'{"name": "John"}\'',
+  );
+  console.log(
+    '  rekku post https://localhost:1234/v1 -a openai -t chat/completions -d \'{"messages": [{"role": "user", "content": "Hello!"}], "model": "gpt-4"}\'',
+  );
 }
 
 async function main() {
@@ -38,15 +49,22 @@ async function main() {
     }
 
     // Handle different commands
-    switch (args.command) {
-      case "dump":
-        await handleDumpCommand(args);
-        break;
-      case "api":
-        await handleApiCommand(args);
-        break;
-      default:
-        throw new Error(`Unknown command: ${args.command}`);
+    const httpMethods = [
+      "get",
+      "post",
+      "put",
+      "delete",
+      "patch",
+      "head",
+      "options",
+    ];
+
+    if (args.command === "dump" || httpMethods.includes(args.command)) {
+      await handleDumpCommand(args);
+    } else if (args.command === "api") {
+      await handleApiCommand(args);
+    } else {
+      throw new Error(`Unknown command: ${args.command}`);
     }
   } catch (error) {
     if (error instanceof z.ZodError) {

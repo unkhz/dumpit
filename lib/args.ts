@@ -71,17 +71,28 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
     return { _showUsage: true } as any;
   }
 
-  if (!["dump", "api"].includes(command)) {
+  const httpMethods = [
+    "get",
+    "post",
+    "put",
+    "delete",
+    "patch",
+    "head",
+    "options",
+  ];
+  const validCommands = ["dump", "api", ...httpMethods];
+
+  if (!validCommands.includes(command)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `Unknown command: ${command}. Available commands: dump, api`,
+      message: `Unknown command: ${command}. Available commands: ${validCommands.join(", ")}`,
       path: ["command"],
     });
     return z.NEVER;
   }
 
   // Handle different command structures
-  if (command === "dump") {
+  if (command === "dump" || httpMethods.includes(command)) {
     // URL is the second positional argument for dump
     const parsedUrl = z.string().url().safeParse(positional[1]);
     if (!parsedUrl.success) {
@@ -181,8 +192,12 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
       }
       method = parsedMethod.data;
     } else {
-      // Infer method based on body presence
-      method = hasJson || hasText || hasTemplate || hasApi ? "POST" : "GET";
+      // Infer method based on command or body presence
+      if (httpMethods.includes(command)) {
+        method = command.toUpperCase() as z.infer<typeof HttpMethodSchema>;
+      } else {
+        method = hasJson || hasText || hasTemplate || hasApi ? "POST" : "GET";
+      }
     }
 
     // Handle template rendering for dump command
@@ -213,7 +228,14 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
       }
 
       // Construct the full template path
-      template = `.rekku/apis/${apiName}/templates/${templatePath}.ts`;
+      // For method-based commands, try without method suffix first, then with method suffix
+      if (httpMethods.includes(command)) {
+        // For method commands like 'post', look for template without method suffix
+        template = `.rekku/apis/${apiName}/templates/${templatePath}.ts`;
+      } else {
+        // For 'dump' command, use the full path as provided
+        template = `.rekku/apis/${apiName}/templates/${templatePath}.ts`;
+      }
 
       // Handle template data
       if ("template-data" in named) {
