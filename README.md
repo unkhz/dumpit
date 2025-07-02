@@ -4,10 +4,14 @@ A command-line tool for making HTTP requests with TypeScript-based templates for
 
 ## Usage
 
-### Basic HTTP Requests
+### Dump Command - HTTP Requests
+
+The `dump` command makes HTTP requests and outputs the response to stdout.
+
+#### Basic HTTP Requests
 
 ```bash
-bunx rekku <URL> [--method <METHOD>] [--json <string> | --text <string>]
+bunx rekku dump <URL> [--method <METHOD>] [--json <string> | --text <string>]
 ```
 
 - `<URL>`: The URL to make the request to.
@@ -15,10 +19,10 @@ bunx rekku <URL> [--method <METHOD>] [--json <string> | --text <string>]
 - `--json <STRING_BODY>`: (Optional) A JSON string to be sent as the request body. Sets `Content-Type` to `application/json`.
 - `--text <STRING_BODY>`: (Optional) A plain text string to be sent as the request body. Sets `Content-Type` to `text/plain`.
 
-### Template-Based Requests
+#### Template-Based Requests
 
 ```bash
-bunx rekku <BASE_URL> --template <TEMPLATE_NAME> --template-data <JSON_DATA>
+bunx rekku dump <BASE_URL> --template <TEMPLATE_NAME> --template-data <JSON_DATA>
 ```
 
 - `--template <TEMPLATE_NAME>` or `-t <TEMPLATE_NAME>`: Use a TypeScript template from the `templates/` directory.
@@ -46,19 +50,19 @@ Templates are TypeScript files that export:
 
 ```bash
 # Chat completion with OpenAI-compatible API
-bunx rekku http://localhost:1234 -t openai/chat-completions -d '{
+bunx rekku dump http://localhost:1234 -t openai/chat-completions -d '{
   "messages": [{"role": "user", "content": "Hello!"}],
   "model": "gpt-4"
 }'
 
 # Generate embeddings
-bunx rekku http://localhost:1234 -t openai/embeddings -d '{
+bunx rekku dump http://localhost:1234 -t openai/embeddings -d '{
   "input": "Hello world",
   "model": "text-embedding-ada-002"
 }'
 
 # Generate images
-bunx rekku http://localhost:1234 -t openai/images-generations -d '{
+bunx rekku dump http://localhost:1234 -t openai/images-generations -d '{
   "prompt": "A sunset over mountains",
   "n": 1,
   "size": "1024x1024"

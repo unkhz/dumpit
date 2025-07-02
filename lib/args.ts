@@ -61,12 +61,28 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
     }
   }
 
-  // URL is now the first positional argument
-  const parsedUrl = z.string().url().safeParse(positional[0]);
+  // First positional argument should be the command
+  const command = positional[0];
+  if (!command) {
+    // Return a special marker to indicate missing command
+    return { _showUsage: true } as any;
+  }
+
+  if (command !== "dump") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Unknown command: ${command}. Available commands: dump`,
+      path: ["command"],
+    });
+    return z.NEVER;
+  }
+
+  // URL is now the second positional argument
+  const parsedUrl = z.string().url().safeParse(positional[1]);
   if (!parsedUrl.success) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `Invalid URL: ${positional[0] || "undefined"}`,
+      message: `Invalid URL: ${positional[1] || "undefined"}`,
       path: ["url"],
     });
     return z.NEVER;
@@ -183,6 +199,7 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
 
   // Construct the final object
   return {
+    command,
     method,
     url: parsedUrl.data,
     body,
