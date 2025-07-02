@@ -212,9 +212,10 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
       templateData,
     };
   } else if (command === "api") {
-    // Handle api command structure: api <subcommand> <name>
+    // Handle api command structure: api <subcommand> <name> <url>
     const subcommand = positional[1];
     const name = positional[2];
+    const url = positional[3];
 
     if (!subcommand) {
       ctx.addIssue({
@@ -243,11 +244,21 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
       return z.NEVER;
     }
 
+    if (!url) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "URL is required for create command",
+        path: ["url"],
+      });
+      return z.NEVER;
+    }
+
     // Construct the final object for api command
     return {
       command,
       subcommand,
       name,
+      url,
     };
   }
 

@@ -1,0 +1,1 @@
+{"openapi":"3.0.0","info":{"title":"Test API","version":"1.0.0"},"paths":{"/v1/chat/completions":{"post":{"responses":{"200":{"description":"Success"}}}},"/v1/embeddings":{"post":{"responses":{"200":{"description":"Success"}}}},"/v1/models":{"get":{"responses":{"200":{"description":"Success"}}}},"/v1/models/{model}":{"get":{"responses":{"200":{"description":"Success"}}}}}}
