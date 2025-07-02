@@ -207,13 +207,6 @@ function convertJsonSchemaToZod(
     return `${schemaName}Schema`;
   }
 
-  if (schema.$ref) {
-    // Handle references - extract schema name from $ref
-    const refParts = schema.$ref.split("/");
-    const schemaName = refParts[refParts.length - 1];
-    return `${schemaName}Schema`;
-  }
-
   switch (schema.type) {
     case "string":
       if (schema.enum) {
