@@ -1,28 +1,26 @@
 # rekku
 
-A command-line tool for making HTTP requests with TypeScript-based templates for API calls.
+A command-line HTTP client that generates type-safe API templates from OpenAPI specifications. Think of it as what Postman should have been - a reusable, scriptable, and type-safe way to test and interact with APIs.
 
-## Usage
+## Quick Start
 
-### HTTP Method Commands
-
-rekku provides dedicated commands for each HTTP method, making it intuitive and concise:
+### Installation
 
 ```bash
-bunx rekku get <URL>
-bunx rekku post <URL> [--json <JSON> | --text <TEXT>]
-bunx rekku put <URL> [--json <JSON> | --text <TEXT>]
-bunx rekku delete <URL>
-bunx rekku patch <URL> [--json <JSON> | --text <TEXT>]
-bunx rekku head <URL>
-bunx rekku options <URL>
+# Use directly with bunx (recommended)
+bunx rekku get https://api.github.com/users/octocat
+
+# Or install globally
+bun install -g rekku
 ```
 
-#### Basic Examples
+### Basic Usage
+
+Simple HTTP requests with intuitive method-based commands:
 
 ```bash
 # GET request
-bunx rekku get https://api.example.com/users
+bunx rekku get https://api.github.com/users/octocat
 
 # POST with JSON data
 bunx rekku post https://api.example.com/users --json '{"name": "John", "email": "john@example.com"}'
@@ -34,177 +32,184 @@ bunx rekku put https://api.example.com/users/123 --text "Updated content"
 bunx rekku delete https://api.example.com/users/123
 ```
 
-### API Templates
+## Setting Up API Testing in Your Project
 
-rekku supports powerful API templates that can be generated from OpenAPI specifications and used with the `--api/-a` flag:
+### 1. Generate API Templates
+
+Create type-safe templates from your API's OpenAPI specification:
 
 ```bash
-bunx rekku <method> <BASE_URL> --api <API_NAME> --template <TEMPLATE_PATH> [--template-data <JSON_DATA>]
+# In your project directory
+bunx rekku api create myapi https://api.example.com/openapi.json
+
+# Or from a local file
+bunx rekku api create myapi ./docs/openapi.yaml
 ```
 
-#### API Template Examples
+This creates a `.rekku/` directory in your project with generated TypeScript templates.
+
+### 2. Use Type-Safe API Templates
+
+Once generated, use the templates for type-safe API calls:
 
 ```bash
-# OpenAI-compatible chat completion
-bunx rekku post http://localhost:1234/v1 -a openai -t chat/completions/post -d '{
-  "messages": [{"role": "user", "content": "Hello!"}],
-  "model": "gpt-4"
+# Use generated templates with validation
+bunx rekku post https://api.example.com -a myapi -t users/post -d '{
+  "name": "John Doe",
+  "email": "john@example.com"
 }'
 
-# Using a petstore API template
-bunx rekku post http://localhost:8080/api/v3 -a petstore -t user/createWithList/post -d '{
-  "users": [{"username": "testuser", "email": "test@example.com"}]
-}'
+# Templates provide automatic validation and path resolution
+bunx rekku get https://api.example.com -a myapi -t users/123/get
 ```
 
-### Creating APIs from OpenAPI Specifications
+### 3. Project Structure
 
-Generate API templates from OpenAPI/Swagger specifications:
+After running `rekku api create`, your project will have:
+
+```
+your-project/
+├── .rekku/
+│   └── apis/
+│       └── myapi/
+│           ├── schemas/          # Generated Zod schemas
+│           ├── templates/        # API endpoint templates
+│           └── tsconfig.json     # TypeScript configuration
+├── package.json
+└── ...
+```
+
+**Note**: Add `.rekku/` to your `.gitignore` if you prefer to regenerate templates, or commit it to share templates with your team.
+
+## Use Cases
+
+### API Development & Testing
 
 ```bash
-bunx rekku api create <API_NAME> <OPENAPI_URL_OR_FILE>
+# Test your API during development
+bunx rekku post http://localhost:3000 -a myapi -t auth/login -d '{"email": "test@example.com", "password": "secret"}'
+
+# Validate request/response schemas
+bunx rekku get http://localhost:3000 -a myapi -t users/get
 ```
 
-This creates a complete set of TypeScript templates in `.rekku/apis/<API_NAME>/templates/` with:
-
-- Type-safe request/response schemas
-- Automatic path and method detection
-- Zod validation schemas
-- TypeScript intellisense support
-
-#### Examples
+### Integration Testing
 
 ```bash
-# Create API from OpenAPI URL
-bunx rekku api create openai https://raw.githubusercontent.com/openai/openai-openapi/master/openapi.yaml
+# Create test scripts using rekku
+#!/bin/bash
+echo "Testing user creation..."
+bunx rekku post $API_BASE_URL -a myapi -t users/post -d '{"name": "Test User", "email": "test@example.com"}'
 
-# Create API from local file
-bunx rekku api create myapi ./openapi.json
+echo "Testing user retrieval..."
+bunx rekku get $API_BASE_URL -a myapi -t users/1/get
 ```
 
-### Legacy Dump Command
-
-The original `dump` command is still supported for backward compatibility:
+### Third-Party API Integration
 
 ```bash
-bunx rekku dump <URL> [--method <METHOD>] [--json <JSON> | --text <TEXT>]
+# Generate templates for external APIs
+bunx rekku api create github https://api.github.com/openapi.json
+bunx rekku api create stripe https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.json
+
+# Use them in your workflow
+bunx rekku get https://api.github.com -a github -t repos/owner/repo/get
 ```
 
-## Templates
+## Command Reference
 
-Templates are TypeScript files generated from OpenAPI specifications that provide type-safe API interactions. Each template exports:
+### HTTP Methods
 
-- `inputSchema`: Zod schema for request body validation
-- `querySchema`: Zod schema for query parameters validation
-- `outputSchema`: Zod schema for response validation
-- `method`: HTTP method for the endpoint
-- `path`: API endpoint path to append to the base URL
-- `render`: Function that validates and transforms input data
+```bash
+bunx rekku get <URL>                    # GET request
+bunx rekku post <URL> [options]         # POST request
+bunx rekku put <URL> [options]          # PUT request
+bunx rekku delete <URL>                 # DELETE request
+bunx rekku patch <URL> [options]        # PATCH request
+bunx rekku head <URL>                   # HEAD request
+bunx rekku options <URL>                # OPTIONS request
+```
+
+### API Management
+
+```bash
+bunx rekku api create <name> <spec>     # Generate API templates from OpenAPI spec
+```
+
+### Options
+
+```bash
+--json <JSON_STRING>                    # Send JSON body
+--text <TEXT_STRING>                    # Send text body
+--api/-a <API_NAME>                     # Use generated API templates
+--template/-t <TEMPLATE_PATH>           # Specify template path
+--template-data/-d <JSON_DATA>          # Data for template rendering
+```
+
+## How It Works
+
+### Generated Templates
+
+Each API endpoint becomes a TypeScript template with:
+
+- **Type-safe schemas**: Zod validation for requests and responses
+- **Automatic path resolution**: No need to remember endpoint URLs
+- **IntelliSense support**: Auto-completion in your editor
+- **Runtime validation**: Catch errors before making requests
 
 ### Template Structure
 
-Templates are organized in `.rekku/apis/<API_NAME>/templates/` with a folder structure that mirrors the API paths:
-
 ```
-.rekku/apis/openai/templates/
-├── chat/completions/post.ts
-├── embeddings/post.ts
-├── images/generations/post.ts
-└── models/get.ts
-```
-
-### Generated Template Example
-
-```typescript
-import { z } from "zod";
-
-export const inputSchema = z.object({
-  messages: z.array(
-    z.object({
-      role: z.enum(["system", "user", "assistant"]),
-      content: z.string(),
-    }),
-  ),
-  model: z.string(),
-  temperature: z.number().optional(),
-});
-
-export const querySchema = z.object({});
-
-export const outputSchema = z.any();
-
-export const method = "POST";
-
-export const path = "/chat/completions";
-
-export function render(
-  data: Partial<z.infer<typeof inputSchema> & z.infer<typeof querySchema>>,
-): {
-  input: z.infer<typeof inputSchema>;
-  query: z.infer<typeof querySchema>;
-} {
-  return {
-    input: inputSchema.parse(data),
-    query: querySchema.parse(data),
-  };
-}
+.rekku/apis/myapi/
+├── schemas/              # Shared Zod schemas
+│   ├── User.ts
+│   └── CreateUserRequest.ts
+├── templates/            # Endpoint templates
+│   ├── users/
+│   │   ├── get.ts       # GET /users
+│   │   ├── post.ts      # POST /users
+│   │   └── {id}/
+│   │       ├── get.ts   # GET /users/{id}
+│   │       └── put.ts   # PUT /users/{id}
+└── tsconfig.json        # TypeScript configuration
 ```
 
-### Available APIs
+## Why rekku?
 
-After generating APIs from OpenAPI specs, you can use them with the `--api/-a` flag. Common examples:
+### vs. Postman
 
-- **OpenAI API**: Chat completions, embeddings, image generation
-- **Petstore API**: Pet management, store operations, user management
-- **Custom APIs**: Any API with an OpenAPI specification
+- **Scriptable**: Use in CI/CD, scripts, and automation
+- **Version controlled**: Templates live in your repo
+- **Type-safe**: Catch errors before making requests
+- **No GUI required**: Perfect for terminal workflows
 
-## Key Features
+### vs. curl
 
-- **Method-based commands**: Intuitive `get`, `post`, `put`, `delete`, etc. commands
-- **OpenAPI integration**: Generate type-safe templates from OpenAPI specifications
-- **Type safety**: Full TypeScript support with Zod validation
-- **Template system**: Reusable, validated API call templates
-- **Auto-completion**: TypeScript intellisense for API schemas
-- **Schema validation**: Request/response validation with detailed error messages
-- **Flexible data input**: Support for JSON, text, and template-based data
-- **Modern CLI**: Built with Bun for fast performance
+- **Type safety**: Automatic validation of requests/responses
+- **Reusable**: Generate templates once, use everywhere
+- **Less error-prone**: No manual URL construction or JSON formatting
+- **Better DX**: IntelliSense and auto-completion
 
-## Project Structure
+### vs. HTTP files
 
-```
-rekku/
-├── lib/
-│   ├── api-modules/
-│   │   └── openapi.ts          # OpenAPI spec processing
-│   ├── args.ts                 # Command-line argument parsing
-│   ├── template.ts             # Template loading and rendering
-│   ├── request.ts              # HTTP request handling
-│   └── dump.ts                 # Response output formatting
-├── .rekku/
-│   └── apis/
-│       ├── openai/             # Generated OpenAI API templates
-│       └── petstore/           # Generated Petstore API templates
-└── index.ts                    # Main CLI entry point
-```
+- **Dynamic**: Generate from OpenAPI specs automatically
+- **Validated**: Runtime schema validation
+- **Portable**: Works across different editors and environments
 
-## Development
-
-### Prerequisites
+## Requirements
 
 - [Bun](https://bun.sh/) runtime
 - [TypeScript](https://www.typescriptlang.org/) (peer dependency)
 - [Prettier](https://prettier.io/) (peer dependency, optional for code formatting)
 
-### Scripts
-
-- `bun run typecheck`: Checks for TypeScript type errors
-- `bun run format`: Formats code using Prettier
-- `bun run build`: Builds the project into the `dist/` folder using `bun --compile`
-
-### Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
 4. Run `bun run typecheck` and `bun run format`
 5. Submit a pull request
+
+## License
+
+MIT
