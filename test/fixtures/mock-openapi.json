@@ -12,14 +12,38 @@
         "required": ["id", "name"],
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
           },
           "email": {
             "type": "string",
             "format": "email"
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+?[1-9]\\d{1,14}$"
+          },
+          "age": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 150
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "multipleOf": 0.5
+          },
+          "status": {
+            "oneOf": [
+              { "type": "string", "enum": ["active", "inactive"] },
+              { "type": "null" }
+            ]
           },
           "profile": {
             "$ref": "#/components/schemas/UserProfile"
@@ -28,7 +52,32 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Tag"
+            },
+            "minItems": 0,
+            "maxItems": 10,
+            "uniqueItems": true
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "preferences": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
             }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "birth_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "website": {
+            "type": "string",
+            "format": "uri"
           }
         }
       },
@@ -100,6 +149,128 @@
           },
           "page": {
             "type": "integer"
+          }
+        }
+      },
+      "ValidationTestSchema": {
+        "type": "object",
+        "required": ["stringField", "numberField"],
+        "properties": {
+          "stringField": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 50,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "emailField": {
+            "type": "string",
+            "format": "email"
+          },
+          "dateTimeField": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dateField": {
+            "type": "string",
+            "format": "date"
+          },
+          "uriField": {
+            "type": "string",
+            "format": "uri"
+          },
+          "uuidField": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numberField": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000,
+            "multipleOf": 0.1
+          },
+          "integerField": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "exclusiveRangeField": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "exclusiveMaximum": 10
+          },
+          "arrayField": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 5,
+            "uniqueItems": true
+          },
+          "enumField": {
+            "type": "string",
+            "enum": ["option1", "option2", "option3"]
+          },
+          "numberEnumField": {
+            "type": "number",
+            "enum": [1, 2, 3, 5, 8]
+          },
+          "nullableField": {
+            "type": ["string", "null"]
+          },
+          "unionField": {
+            "oneOf": [
+              { "type": "string" },
+              { "type": "number" },
+              { "type": "boolean" }
+            ]
+          },
+          "anyOfField": {
+            "anyOf": [
+              { "type": "string", "minLength": 5 },
+              { "type": "number", "minimum": 10 }
+            ]
+          },
+          "allOfField": {
+            "allOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" }
+                },
+                "required": ["name"]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "age": { "type": "number" }
+                },
+                "required": ["age"]
+              }
+            ]
+          },
+          "strictObject": {
+            "type": "object",
+            "properties": {
+              "prop1": { "type": "string" }
+            },
+            "additionalProperties": false
+          },
+          "passthroughObject": {
+            "type": "object",
+            "properties": {
+              "prop1": { "type": "string" }
+            },
+            "additionalProperties": true
+          },
+          "catchallObject": {
+            "type": "object",
+            "properties": {
+              "prop1": { "type": "string" }
+            },
+            "additionalProperties": {
+              "type": "number"
+            }
           }
         }
       }
@@ -372,6 +543,33 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/validation-test": {
+      "post": {
+        "summary": "Test endpoint for comprehensive validation features",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidationTestSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Validation test successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationTestSchema"
                 }
               }
             }

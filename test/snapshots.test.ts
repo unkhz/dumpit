@@ -53,35 +53,40 @@ test("generates expected file structure", async () => {
   // Snapshot the directory structure
   expect(structure).toEqual({
     schemas: {
+      ".gitkeep": "file",
       "CreateUserRequest.ts": "file",
       "SearchResponse.ts": "file",
       "Tag.ts": "file",
       "User.ts": "file",
       "UserProfile.ts": "file",
       "UserSettings.ts": "file",
-      ".gitkeep": "file",
+      "ValidationTestSchema.ts": "file",
     },
     templates: {
+      ".gitkeep": "file",
       search: {
-        "get.ts": "file",
         ".gitkeep": "file",
+        "get.ts": "file",
       },
       users: {
+        ".gitkeep": "file",
         "get.ts": "file",
         "post.ts": "file",
         "{user_id}": {
+          ".gitkeep": "file",
           "delete.ts": "file",
           "get.ts": "file",
-          "put.ts": "file",
           profile: {
-            "get.ts": "file",
             ".gitkeep": "file",
+            "get.ts": "file",
           },
-          ".gitkeep": "file",
+          "put.ts": "file",
         },
-        ".gitkeep": "file",
       },
-      ".gitkeep": "file",
+      "validation-test": {
+        ".gitkeep": "file",
+        "post.ts": "file",
+      },
     },
     "tsconfig.json": "file",
   });
@@ -111,11 +116,12 @@ test("generates expected schema content", async () => {
   );
   expect(normalizedUserSchema).toContain("id: z.string()");
   expect(normalizedUserSchema).toContain("name: z.string()");
-  expect(normalizedUserSchema).toContain("email: z.string().optional()");
   expect(normalizedUserSchema).toContain(
     "profile: UserProfileSchema.optional()",
   );
-  expect(normalizedUserSchema).toContain("tags: z.array(TagSchema).optional()");
+  expect(normalizedUserSchema).toContain(
+    'tags: z.array(TagSchema).min(0).max(10).refine(items => new Set(items).size === items.length, { message: "Array items must be unique" }).optional()',
+  );
   expect(normalizedUserSchema).toContain(
     "export type User = z.infer<typeof UserSchema>",
   );

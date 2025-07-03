@@ -241,13 +241,13 @@ function convertJsonSchemaToZod(
   schema: any,
   collectedRefs?: Set<string>,
 ): string {
-  // Simple JSON Schema to Zod conversion
+  // Handle null, undefined, or non-object schemas
   if (!schema || typeof schema !== "object") {
     return "z.any()";
   }
 
+  // Handle $ref references
   if (schema.$ref) {
-    // Handle references - extract schema name from $ref
     const refParts = schema.$ref.split("/");
     const schemaName = refParts[refParts.length - 1];
     if (collectedRefs) {
@@ -256,48 +256,280 @@ function convertJsonSchemaToZod(
     return `${schemaName}Schema`;
   }
 
+  // Handle nullable types (array of types including null)
+  if (Array.isArray(schema.type)) {
+    return handleNullableType(schema, collectedRefs);
+  }
+
+  // Handle schema combinators
+  if (schema.oneOf || schema.anyOf || schema.allOf) {
+    return handleCombinators(schema, collectedRefs);
+  }
+
+  // Handle specific types
   switch (schema.type) {
     case "string":
-      if (schema.enum) {
-        const enumValues = schema.enum.map((v: string) => `"${v}"`).join(", ");
-        return `z.enum([${enumValues}])`;
-      }
-      return "z.string()";
+      return handleStringSchema(schema);
 
     case "number":
     case "integer":
-      return "z.number()";
+      return handleNumberSchema(schema);
 
     case "boolean":
       return "z.boolean()";
 
     case "array":
-      if (schema.items) {
-        const itemSchema = convertJsonSchemaToZod(schema.items, collectedRefs);
-        return `z.array(${itemSchema})`;
-      }
-      return "z.array(z.any())";
+      return handleArraySchema(schema, collectedRefs);
 
     case "object":
-      if (schema.properties) {
-        const properties = Object.entries(schema.properties)
-          .map(([key, value]: [string, any]) => {
-            const propSchema = convertJsonSchemaToZod(value, collectedRefs);
-            const isRequired = schema.required?.includes(key);
-            // Quote property names that contain special characters
-            const propertyName = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key)
-              ? key
-              : `"${key}"`;
-            return `${propertyName}: ${propSchema}${isRequired ? "" : ".optional()"}`;
-          })
-          .join(", ");
-        return `z.object({ ${properties} })`;
-      }
-      return "z.object({})";
+      return handleObjectSchema(schema, collectedRefs);
 
     default:
       return "z.any()";
   }
+}
+
+function handleNullableType(schema: any, collectedRefs?: Set<string>): string {
+  const types = schema.type;
+  const hasNull = types.includes("null");
+
+  if (hasNull) {
+    // Filter out null and handle the remaining type(s)
+    const nonNullTypes = types.filter((t: string) => t !== "null");
+
+    if (nonNullTypes.length === 1) {
+      // Single non-null type, make it nullable
+      const baseSchema = convertJsonSchemaToZod(
+        { ...schema, type: nonNullTypes[0] },
+        collectedRefs,
+      );
+      return `${baseSchema}.nullable()`;
+    } else if (nonNullTypes.length > 1) {
+      // Multiple non-null types, create union and make nullable
+      const unionSchema = handleTypeUnion(nonNullTypes, schema, collectedRefs);
+      return `${unionSchema}.nullable()`;
+    } else {
+      // Only null type
+      return "z.null()";
+    }
+  } else {
+    // No null, just a union of types
+    return handleTypeUnion(types, schema, collectedRefs);
+  }
+}
+
+function handleTypeUnion(
+  types: string[],
+  baseSchema: any,
+  collectedRefs?: Set<string>,
+): string {
+  const schemas = types.map((type) => {
+    const singleTypeSchema = { ...baseSchema, type };
+    return convertJsonSchemaToZod(singleTypeSchema, collectedRefs);
+  });
+
+  if (schemas.length === 1) {
+    return schemas[0]!;
+  }
+
+  return `z.union([${schemas.join(", ")}])`;
+}
+
+function handleCombinators(schema: any, collectedRefs?: Set<string>): string {
+  if (schema.oneOf) {
+    const schemas = schema.oneOf.map((s: any) =>
+      convertJsonSchemaToZod(s, collectedRefs),
+    );
+    return `z.union([${schemas.join(", ")}])`;
+  }
+
+  if (schema.anyOf) {
+    const schemas = schema.anyOf.map((s: any) =>
+      convertJsonSchemaToZod(s, collectedRefs),
+    );
+    return `z.union([${schemas.join(", ")}])`;
+  }
+
+  if (schema.allOf) {
+    // For allOf, we merge the schemas and convert the result
+    const mergedSchema = mergeAllOfSchemas(schema.allOf);
+    return convertJsonSchemaToZod(mergedSchema, collectedRefs);
+  }
+
+  return "z.any()";
+}
+
+function mergeAllOfSchemas(schemas: any[]): any {
+  return schemas.reduce((merged, current) => {
+    const result = { ...merged, ...current };
+
+    // Merge properties
+    if (merged.properties && current.properties) {
+      result.properties = { ...merged.properties, ...current.properties };
+    }
+
+    // Merge required arrays
+    if (merged.required && current.required) {
+      result.required = [...new Set([...merged.required, ...current.required])];
+    }
+
+    return result;
+  }, {});
+}
+
+function handleStringSchema(schema: any): string {
+  let result = "z.string()";
+
+  // Handle enum first (most specific)
+  if (schema.enum) {
+    const enumValues = schema.enum.map((v: string) => `"${v}"`).join(", ");
+    return `z.enum([${enumValues}])`;
+  }
+
+  // Handle format validation
+  if (schema.format) {
+    switch (schema.format) {
+      case "email":
+        result += ".email()";
+        break;
+      case "date-time":
+        result += ".datetime()";
+        break;
+      case "uri":
+      case "url":
+        result += ".url()";
+        break;
+      case "uuid":
+        result += ".uuid()";
+        break;
+      case "date":
+        result += ".date()";
+        break;
+    }
+  }
+
+  // Handle pattern validation
+  if (schema.pattern) {
+    const escapedPattern = String(schema.pattern)
+      .replace(/\\/g, "\\\\")
+      .replace(/"/g, '\\"');
+    result += `.regex(new RegExp("${escapedPattern}"))`;
+  }
+
+  // Handle length constraints
+  if (schema.minLength !== undefined) {
+    result += `.min(${schema.minLength})`;
+  }
+
+  if (schema.maxLength !== undefined) {
+    result += `.max(${schema.maxLength})`;
+  }
+
+  return result;
+}
+
+function handleNumberSchema(schema: any): string {
+  let result = "z.number()";
+
+  // Handle enum first
+  if (schema.enum) {
+    const numberEnums = schema.enum.filter((v: any) => typeof v === "number");
+    if (numberEnums.length > 0) {
+      return `z.number().refine(val => [${numberEnums.join(", ")}].includes(val), { message: "Number must be one of: ${numberEnums.join(", ")}" })`;
+    }
+  }
+
+  // Handle integer constraint
+  if (schema.type === "integer") {
+    result += ".int()";
+  }
+
+  // Handle bounds
+  if (schema.minimum !== undefined) {
+    if (schema.exclusiveMinimum) {
+      result += `.gt(${schema.minimum})`;
+    } else {
+      result += `.gte(${schema.minimum})`;
+    }
+  }
+
+  if (schema.maximum !== undefined) {
+    if (schema.exclusiveMaximum) {
+      result += `.lt(${schema.maximum})`;
+    } else {
+      result += `.lte(${schema.maximum})`;
+    }
+  }
+
+  // Handle multipleOf
+  if (schema.multipleOf !== undefined) {
+    result += `.refine(val => val % ${schema.multipleOf} === 0, { message: "Number must be a multiple of ${schema.multipleOf}" })`;
+  }
+
+  return result;
+}
+
+function handleArraySchema(schema: any, collectedRefs?: Set<string>): string {
+  let itemSchema = "z.any()";
+
+  if (schema.items) {
+    itemSchema = convertJsonSchemaToZod(schema.items, collectedRefs);
+  }
+
+  let result = `z.array(${itemSchema})`;
+
+  // Handle array constraints
+  if (schema.minItems !== undefined) {
+    result += `.min(${schema.minItems})`;
+  }
+
+  if (schema.maxItems !== undefined) {
+    result += `.max(${schema.maxItems})`;
+  }
+
+  if (schema.uniqueItems) {
+    result += `.refine(items => new Set(items).size === items.length, { message: "Array items must be unique" })`;
+  }
+
+  return result;
+}
+
+function handleObjectSchema(schema: any, collectedRefs?: Set<string>): string {
+  if (!schema.properties) {
+    return "z.object({})";
+  }
+
+  const properties = Object.entries(schema.properties)
+    .map(([key, value]: [string, any]) => {
+      const propSchema = convertJsonSchemaToZod(value, collectedRefs);
+      const isRequired = schema.required?.includes(key);
+      // Quote property names that contain special characters
+      const propertyName = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key)
+        ? key
+        : `"${key}"`;
+      return `${propertyName}: ${propSchema}${isRequired ? "" : ".optional()"}`;
+    })
+    .join(", ");
+
+  let result = `z.object({ ${properties} })`;
+
+  // Handle additionalProperties
+  if (schema.additionalProperties === true) {
+    result += ".passthrough()";
+  } else if (schema.additionalProperties === false) {
+    result += ".strict()";
+  } else if (
+    schema.additionalProperties &&
+    typeof schema.additionalProperties === "object"
+  ) {
+    const additionalSchema = convertJsonSchemaToZod(
+      schema.additionalProperties,
+      collectedRefs,
+    );
+    result += `.catchall(${additionalSchema})`;
+  }
+
+  return result;
 }
 
 function generateTemplates(
