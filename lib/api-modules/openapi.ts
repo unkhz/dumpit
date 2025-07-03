@@ -63,6 +63,9 @@ export async function generateTemplatesFromOpenAPI(
     // Write templates to disk
     await writeTemplatesToDisk(apiName, templates);
 
+    // Format all generated TypeScript files
+    await formatGeneratedCode(apiName);
+
     console.log(
       `Generated ${templates.length} templates and ${Object.keys(schemas).length} schemas for API: ${apiName}`,
     );
@@ -117,6 +120,29 @@ function parseYaml(yamlText: string): any {
   return yaml.load(yamlText);
 }
 
+async function formatGeneratedCode(apiName: string): Promise<void> {
+  try {
+    const apiDir = `.rekku/apis/${apiName}`;
+
+    // Run prettier on the entire API directory
+    const proc = Bun.spawn(
+      ["bun", "run", "prettier", "--write", `${apiDir}/**/*.ts`],
+      {
+        stdout: "pipe",
+        stderr: "pipe",
+      },
+    );
+
+    const result = await proc.exited;
+
+    if (result !== 0) {
+      const stderr = await new Response(proc.stderr).text();
+      console.warn("Prettier formatting failed for some files:", stderr);
+    }
+  } catch (error) {
+    console.warn("Prettier not available:", error);
+  }
+}
 async function createTsConfig(apiName: string): Promise<void> {
   const apiDir = `.rekku/apis/${apiName}`;
   const tsconfigPath = `${apiDir}/tsconfig.json`;
@@ -138,7 +164,8 @@ async function createTsConfig(apiName: string): Promise<void> {
     exclude: ["node_modules"],
   };
 
-  await Bun.write(Bun.file(tsconfigPath), JSON.stringify(tsconfig, null, 2));
+  const tsconfigContent = JSON.stringify(tsconfig, null, 2);
+  await Bun.write(Bun.file(tsconfigPath), tsconfigContent);
 }
 
 async function extractAndWriteSchemas(
