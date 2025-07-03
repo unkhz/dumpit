@@ -192,6 +192,8 @@ rekku/
 ### Prerequisites
 
 - [Bun](https://bun.sh/) runtime
+- [TypeScript](https://www.typescriptlang.org/) (peer dependency)
+- [Prettier](https://prettier.io/) (peer dependency, optional for code formatting)
 
 ### Scripts
 

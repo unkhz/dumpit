@@ -122,6 +122,19 @@ function parseYaml(yamlText: string): any {
 
 async function formatGeneratedCode(apiName: string): Promise<void> {
   try {
+    // Check if prettier is available
+    const checkProc = Bun.spawn(["bun", "run", "prettier", "--version"], {
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+
+    const checkResult = await checkProc.exited;
+
+    if (checkResult !== 0) {
+      console.log("Prettier not available, skipping code formatting");
+      return;
+    }
+
     const apiDir = `.rekku/apis/${apiName}`;
 
     // Run prettier on the entire API directory with --no-ignore to bypass gitignore
@@ -148,7 +161,7 @@ async function formatGeneratedCode(apiName: string): Promise<void> {
       console.warn("Prettier formatting failed for some files:", stderr);
     }
   } catch (error) {
-    console.warn("Prettier not available:", error);
+    console.log("Prettier not available, skipping code formatting");
   }
 }
 async function createTsConfig(apiName: string): Promise<void> {
@@ -301,7 +314,6 @@ function generateTemplates(
         path,
         method.toUpperCase(),
         operation,
-        spec,
         schemas,
       );
       templates.push(template);
@@ -315,7 +327,6 @@ function generateTemplate(
   path: string,
   method: string,
   operation: OpenAPIOperation,
-  spec: OpenAPISpec,
   schemas: Record<string, string>,
 ): Template {
   // Create folder structure based on path and use method as filename
