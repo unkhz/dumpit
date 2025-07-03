@@ -1,6 +1,6 @@
 {
   "name": "rekku",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "bin": {
     "rekku": "bin/rekku"
   },
