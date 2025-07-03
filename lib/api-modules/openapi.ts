@@ -124,9 +124,17 @@ async function formatGeneratedCode(apiName: string): Promise<void> {
   try {
     const apiDir = `.rekku/apis/${apiName}`;
 
-    // Run prettier on the entire API directory
+    // Run prettier on the entire API directory with --no-ignore to bypass gitignore
     const proc = Bun.spawn(
-      ["bun", "run", "prettier", "--write", `${apiDir}/**/*.ts`],
+      [
+        "bun",
+        "run",
+        "prettier",
+        "--write",
+        "--no-ignore",
+        `${apiDir}/**/*.ts`,
+        `${apiDir}/**/*.json`,
+      ],
       {
         stdout: "pipe",
         stderr: "pipe",
@@ -192,6 +200,7 @@ async function extractAndWriteSchemas(
       schemaDefinition,
       referencedSchemas,
     );
+
     const filename = `${schemaName}.ts`;
     const filePath = `${schemasDir}/${filename}`;
 
@@ -262,7 +271,11 @@ function convertJsonSchemaToZod(
           .map(([key, value]: [string, any]) => {
             const propSchema = convertJsonSchemaToZod(value, collectedRefs);
             const isRequired = schema.required?.includes(key);
-            return `${key}: ${propSchema}${isRequired ? "" : ".optional()"}`;
+            // Quote property names that contain special characters
+            const propertyName = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key)
+              ? key
+              : `"${key}"`;
+            return `${propertyName}: ${propSchema}${isRequired ? "" : ".optional()"}`;
           })
           .join(", ");
         return `z.object({ ${properties} })`;
@@ -394,7 +407,11 @@ function generateQuerySchema(operation: OpenAPIOperation): SchemaResult {
     .map((param) => {
       const isRequired = param.required || false;
       const paramSchema = convertJsonSchemaToZod(param.schema);
-      return `${param.name}: ${paramSchema}${isRequired ? "" : ".optional()"}`;
+      // Quote property names that contain special characters
+      const propertyName = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(param.name)
+        ? param.name
+        : `"${param.name}"`;
+      return `${propertyName}: ${paramSchema}${isRequired ? "" : ".optional()"}`;
     })
     .join(", ");
 

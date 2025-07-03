@@ -336,12 +336,23 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
       return z.NEVER;
     }
 
+    // Validate URL for api command
+    const parsedUrl = z.string().url().safeParse(url);
+    if (!parsedUrl.success) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Invalid URL: ${url}`,
+        path: ["url"],
+      });
+      return z.NEVER;
+    }
+
     // Construct the final object for api command
     return {
       command,
       subcommand,
       name,
-      url,
+      url: parsedUrl.data,
     };
   }
 
