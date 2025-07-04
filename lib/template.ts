@@ -53,7 +53,7 @@ export function render<T extends TemplateSchemas>(
 export async function renderTemplate(
   templatePath: string,
   data: any,
-  baseUrl?: string,
+  baseUrl: string,
 ): Promise<TemplateResult> {
   try {
     // Resolve filesystem template path (always relative to cwd)
@@ -88,13 +88,8 @@ export async function renderTemplate(
     // Use the shared render function with the template's schemas
     const rendered = render(templateModule, data);
 
-    // Resolve the API path by replacing path parameters with actual values
-    const resolvedApiPath = resolveApiPath(templateModule.path, rendered.path);
-
     // Build the full request URL by combining baseUrl + resolved API path
-    const url = baseUrl
-      ? new URL(resolvedApiPath, baseUrl).toString()
-      : resolvedApiPath;
+    const url = resolveApiUrl(baseUrl, templateModule.path, rendered.path);
 
     return {
       input: rendered.input,
@@ -109,7 +104,8 @@ export async function renderTemplate(
   }
 }
 
-function resolveApiPath(
+function resolveApiUrl(
+  baseUrl: string,
   pathTemplate: string,
   pathParams: Record<string, any>,
 ): string {
@@ -121,5 +117,8 @@ function resolveApiPath(
     resolvedPath = resolvedPath.replace(placeholder, String(value));
   }
 
-  return resolvedPath.replace(/^\/+/, "");
+  return new URL(
+    resolvedPath.replace(/^\/+/, ""),
+    baseUrl.replace(/\/+$/, "") + "/",
+  ).toString();
 }
