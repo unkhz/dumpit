@@ -69,9 +69,6 @@ async function main() {
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error("Invalid arguments:", error.flatten());
-      console.error(
-        "Usage: rekku dump <url> [--json <string> | --text <string> | --template/-t <path> [--template-data/-d <json>]]",
-      );
     } else {
       console.error("An unexpected error occurred:", error);
     }
@@ -147,8 +144,6 @@ async function createApiFromOpenAPI(name: string, url: string) {
   const apiPath = `.rekku/apis/${name}`;
 
   try {
-    // Create the base directory
-    await Bun.write(Bun.file(`${apiPath}/.gitkeep`), "");
     console.log(`Created API folder: ${apiPath}`);
 
     // Generate templates from OpenAPI schema
