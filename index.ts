@@ -90,7 +90,7 @@ async function handleDumpCommand(args: any) {
     const templateResult = await renderTemplate(
       args.template,
       args.templateData,
-      args.url, // Pass the base URL to renderTemplate
+      args.url,
     );
 
     // Use template's method

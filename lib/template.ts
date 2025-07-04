@@ -55,55 +55,53 @@ export async function renderTemplate(
   data: any,
   baseUrl: string,
 ): Promise<TemplateResult> {
-  try {
-    // Resolve filesystem template path (always relative to cwd)
-    const resolvedTemplatePath = resolve(process.cwd(), templatePath);
+  // Resolve filesystem template path (always relative to cwd)
+  const resolvedTemplatePath = resolve(process.cwd(), templatePath);
 
-    // Only support TypeScript templates
-    if (!resolvedTemplatePath.endsWith(".ts")) {
-      throw new Error(
-        `Template ${templatePath} must be a TypeScript file (.ts)`,
-      );
-    }
+  const templateModule = await import(resolvedTemplatePath);
 
-    const templateModule = await import(resolvedTemplatePath);
-
-    // Validate required exports for new template format
-    if (!templateModule.inputSchema) {
-      throw new Error(`Template ${templatePath} must export an 'inputSchema'`);
-    }
-    if (!templateModule.querySchema) {
-      throw new Error(`Template ${templatePath} must export a 'querySchema'`);
-    }
-    if (!templateModule.pathSchema) {
-      throw new Error(`Template ${templatePath} must export a 'pathSchema'`);
-    }
-    if (!templateModule.method) {
-      throw new Error(`Template ${templatePath} must export a 'method' string`);
-    }
-    if (!templateModule.path) {
-      throw new Error(`Template ${templatePath} must export a 'path' string`);
-    }
-
-    // Use the shared render function with the template's schemas
-    const rendered = render(templateModule, data);
-
-    // Build the full request URL by combining baseUrl + resolved API path
-    const url = resolveApiUrl(baseUrl, templateModule.path, rendered.path);
-
-    return {
-      input: rendered.input,
-      query: rendered.query,
-      path: rendered.path,
-      method: templateModule.method,
-      pathTemplate: templateModule.path,
-      url,
-    };
-  } catch (error) {
-    throw new Error(`Failed to render template ${templatePath}: ${error}`);
+  // Validate required exports for new template format
+  if (!templateModule.inputSchema) {
+    throw new Error(
+      `Template ${resolvedTemplatePath} must export an 'inputSchema'`,
+    );
   }
-}
+  if (!templateModule.querySchema) {
+    throw new Error(
+      `Template ${resolvedTemplatePath} must export a 'querySchema'`,
+    );
+  }
+  if (!templateModule.pathSchema) {
+    throw new Error(
+      `Template ${resolvedTemplatePath} must export a 'pathSchema'`,
+    );
+  }
+  if (!templateModule.method) {
+    throw new Error(
+      `Template ${resolvedTemplatePath} must export a 'method' string`,
+    );
+  }
+  if (!templateModule.path) {
+    throw new Error(
+      `Template ${resolvedTemplatePath} must export a 'path' string`,
+    );
+  }
 
+  // Use the shared render function with the template's schemas
+  const rendered = render(templateModule, data);
+
+  // Build the full request URL by combining baseUrl + resolved API path
+  const url = resolveApiUrl(baseUrl, templateModule.path, rendered.path);
+
+  return {
+    input: rendered.input,
+    query: rendered.query,
+    path: rendered.path,
+    method: templateModule.method,
+    pathTemplate: templateModule.path,
+    url,
+  };
+}
 function resolveApiUrl(
   baseUrl: string,
   pathTemplate: string,

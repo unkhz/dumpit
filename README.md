@@ -54,13 +54,13 @@ Once generated, use the templates for type-safe API calls:
 
 ```bash
 # Use generated templates with validation
-bunx rekku post https://api.example.com -a myapi -t users/post -d '{
+bunx rekku post https://api.example.com -a myapi -t users -d '{
   "name": "John Doe",
   "email": "john@example.com"
 }'
 
 # Templates provide automatic validation and path resolution
-bunx rekku get https://api.example.com -a myapi -t users/123/get
+bunx rekku get https://api.example.com -a myapi -t users/123
 ```
 
 ### 3. Project Structure
@@ -90,7 +90,7 @@ your-project/
 bunx rekku post http://localhost:3000 -a myapi -t auth/login -d '{"email": "test@example.com", "password": "secret"}'
 
 # Validate request/response schemas
-bunx rekku get http://localhost:3000 -a myapi -t users/get
+bunx rekku get http://localhost:3000 -a myapi -t users
 ```
 
 ### Integration Testing
@@ -99,10 +99,10 @@ bunx rekku get http://localhost:3000 -a myapi -t users/get
 # Create test scripts using rekku
 #!/bin/bash
 echo "Testing user creation..."
-bunx rekku post $API_BASE_URL -a myapi -t users/post -d '{"name": "Test User", "email": "test@example.com"}'
+bunx rekku post $API_BASE_URL -a myapi -t users -d '{"name": "Test User", "email": "test@example.com"}'
 
 echo "Testing user retrieval..."
-bunx rekku get $API_BASE_URL -a myapi -t users/1/get
+bunx rekku get $API_BASE_URL -a myapi -t users/1
 ```
 
 ### Third-Party API Integration
@@ -113,7 +113,7 @@ bunx rekku api create github https://api.github.com/openapi.json
 bunx rekku api create stripe https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.json
 
 # Use them in your workflow
-bunx rekku get https://api.github.com -a github -t repos/owner/repo/get
+bunx rekku get https://api.github.com -a github -t repos/owner/repo
 ```
 
 ## Command Reference

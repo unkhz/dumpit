@@ -1,3 +1,4 @@
+import { resolve } from "path";
 import { z } from "zod";
 
 const HttpMethodSchema = z.enum([
@@ -227,15 +228,16 @@ const FullArgsSchema = z.array(z.string()).transform((args, ctx) => {
         return z.NEVER;
       }
 
-      // Construct the full template path
-      // For method-based commands, try without method suffix first, then with method suffix
-      if (httpMethods.includes(command)) {
-        // For method commands like 'post', look for template without method suffix
-        template = `.rekku/apis/${apiName}/templates/${templatePath}.ts`;
-      } else {
-        // For 'dump' command, use the full path as provided
-        template = `.rekku/apis/${apiName}/templates/${templatePath}.ts`;
-      }
+      // Determine the template filename based on the HTTP method
+      const methodTemplate = `${method.toLowerCase()}.ts`;
+      template = resolve(
+        process.cwd(),
+        ".rekku/apis/",
+        apiName,
+        "templates",
+        templatePath,
+        methodTemplate,
+      );
 
       // Handle template data
       if ("template-data" in named) {
