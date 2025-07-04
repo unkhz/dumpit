@@ -570,6 +570,9 @@ function generateTemplate(
   // Generate query schema (query parameters)
   const querySchemaResult = generateQuerySchema(operation);
 
+  // Generate path schema (path parameters)
+  const pathSchemaResult = generatePathSchema(operation);
+
   // Generate output schema (response)
   const outputSchemaResult = generateOutputSchema(operation, schemas);
 
@@ -577,6 +580,7 @@ function generateTemplate(
   const allImports = [
     ...inputSchemaResult.imports,
     ...querySchemaResult.imports,
+    ...pathSchemaResult.imports,
     ...outputSchemaResult.imports,
   ].filter((imp, index, arr) => arr.indexOf(imp) === index); // Remove duplicates
 
@@ -586,30 +590,13 @@ export const inputSchema = ${inputSchemaResult.schema};
 
 export const querySchema = ${querySchemaResult.schema};
 
+export const pathSchema = ${pathSchemaResult.schema};
+
 export const outputSchema = ${outputSchemaResult.schema};
 
 export const method = "${method}";
 
 export const path = "${path}";
-
-export function render(data: Partial<z.infer<typeof inputSchema> & z.infer<typeof querySchema>>): {
-  input: z.infer<typeof inputSchema>;
-  query: z.infer<typeof querySchema>;
-} {
-  // Handle the case where inputSchema is z.never() (no request body)
-  let input: z.infer<typeof inputSchema>;
-  try {
-    input = inputSchema.parse(data);
-  } catch {
-    // If inputSchema is z.never(), return undefined as the input
-    input = undefined as z.infer<typeof inputSchema>;
-  }
-
-  return {
-    input,
-    query: querySchema.parse(data),
-  };
-}
 `;
 
   return { filename, content };
@@ -655,6 +642,28 @@ function generateQuerySchema(operation: OpenAPIOperation): SchemaResult {
         ? param.name
         : `"${param.name}"`;
       return `${propertyName}: ${paramSchema}${isRequired ? "" : ".optional()"}`;
+    })
+    .join(", ");
+
+  return { schema: `z.object({ ${schemaFields} })`, imports: [] };
+}
+
+function generatePathSchema(operation: OpenAPIOperation): SchemaResult {
+  const pathParams = operation.parameters?.filter((p) => p.in === "path") || [];
+
+  if (pathParams.length === 0) {
+    return { schema: "z.object({})", imports: [] };
+  }
+
+  // Create a simple object schema for path parameters
+  const schemaFields = pathParams
+    .map((param) => {
+      const paramSchema = convertJsonSchemaToZod(param.schema);
+      // Path parameters are always required
+      const propertyName = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(param.name)
+        ? param.name
+        : `"${param.name}"`;
+      return `${propertyName}: ${paramSchema}`;
     })
     .join(", ");
 

@@ -90,9 +90,10 @@ async function handleDumpCommand(args: any) {
     const templateResult = await renderTemplate(
       args.template,
       args.templateData,
+      args.url, // Pass the base URL to renderTemplate
     );
 
-    // Use template's method and path
+    // Use template's method
     requestOptions.method = templateResult.method as
       | "GET"
       | "POST"
@@ -108,13 +109,8 @@ async function handleDumpCommand(args: any) {
       requestOptions.headers = { "Content-Type": "application/json" };
     }
 
-    // Append template path to URL
-    if (templateResult.path) {
-      // Clean up slashes: remove trailing slashes from base, leading slashes from path
-      const baseUrl = args.url.replace(/\/+$/, "");
-      const path = templateResult.path.replace(/^\/+/, "");
-      finalUrl = `${baseUrl}/${path}`;
-    }
+    // Use the URL from template (already includes baseUrl + resolved path)
+    finalUrl = templateResult.url;
 
     // Add query parameters from template
     if (templateResult.query && Object.keys(templateResult.query).length > 0) {
@@ -133,7 +129,6 @@ async function handleDumpCommand(args: any) {
   if (args.contentType) {
     requestOptions.headers = { "Content-Type": args.contentType };
   }
-
   const responseStream = await request(finalUrl, requestOptions);
   await dumpStreamToStdout(responseStream);
 }

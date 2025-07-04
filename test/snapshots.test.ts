@@ -159,5 +159,4 @@ test("generates expected template content", async () => {
   );
   expect(normalizedTemplate).toContain('export const method = "GET"');
   expect(normalizedTemplate).toContain('export const path = "/users"');
-  expect(normalizedTemplate).toContain("export function render(");
 });
