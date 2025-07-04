@@ -100,14 +100,20 @@ async function fetchOpenAPISpec(url: string): Promise<OpenAPISpec> {
       return JSON.parse(text) as OpenAPISpec;
     }
   } else {
+    // Handle file:// URLs by converting to local path
+    let filePath = url;
+    if (url.startsWith("file://")) {
+      filePath = url.replace("file://", "");
+    }
+
     // Read from local file
-    const file = Bun.file(url);
+    const file = Bun.file(filePath);
     if (!(await file.exists())) {
-      throw new Error(`OpenAPI spec file not found: ${url}`);
+      throw new Error(`OpenAPI spec file not found: ${filePath}`);
     }
 
     // Parse based on file extension
-    if (url.endsWith(".yaml") || url.endsWith(".yml")) {
+    if (filePath.endsWith(".yaml") || filePath.endsWith(".yml")) {
       const text = await file.text();
       return parseYaml(text) as OpenAPISpec;
     } else {
@@ -351,12 +357,48 @@ function handleCombinators(schema: any, collectedRefs?: Set<string>): string {
   }
 
   if (schema.allOf) {
-    // For allOf, we merge the schemas and convert the result
-    const mergedSchema = mergeAllOfSchemas(schema.allOf);
-    return convertJsonSchemaToZod(mergedSchema, collectedRefs);
+    // For allOf, we need to handle $refs and merge schemas properly
+    return handleAllOfSchema(schema.allOf, collectedRefs);
   }
 
   return "z.any()";
+}
+
+function handleAllOfSchema(
+  schemas: any[],
+  collectedRefs?: Set<string>,
+): string {
+  // Check if any schema has nested allOf, oneOf, anyOf, or $ref
+  const hasComplexSchemas = schemas.some(
+    (s) => s.$ref || s.allOf || s.oneOf || s.anyOf,
+  );
+
+  if (hasComplexSchemas) {
+    // If any schema is complex, use intersection approach
+    const zodSchemas = schemas.map((s) =>
+      convertJsonSchemaToZod(s, collectedRefs),
+    );
+    if (zodSchemas.length === 1) {
+      return zodSchemas[0]!;
+    }
+    return buildIntersection(zodSchemas);
+  } else {
+    // All simple inline schemas - merge them
+    const mergedSchema = mergeAllOfSchemas(schemas);
+    return convertJsonSchemaToZod(mergedSchema, collectedRefs);
+  }
+}
+
+function buildIntersection(zodSchemas: string[]): string {
+  if (zodSchemas.length === 1) {
+    return zodSchemas[0]!;
+  }
+
+  let result = zodSchemas[0]!;
+  for (let i = 1; i < zodSchemas.length; i++) {
+    result = `z.intersection(${result}, ${zodSchemas[i]})`;
+  }
+  return result;
 }
 
 function mergeAllOfSchemas(schemas: any[]): any {
@@ -371,12 +413,15 @@ function mergeAllOfSchemas(schemas: any[]): any {
     // Merge required arrays
     if (merged.required && current.required) {
       result.required = [...new Set([...merged.required, ...current.required])];
+    } else if (current.required && !merged.required) {
+      result.required = current.required;
+    } else if (merged.required && !current.required) {
+      result.required = merged.required;
     }
 
     return result;
   }, {});
 }
-
 function handleStringSchema(schema: any): string {
   let result = "z.string()";
 
